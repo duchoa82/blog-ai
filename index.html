@@ -15,6 +15,18 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <!-- Shopify App Bridge Setup - Required for app-bridge-react components -->
+    <meta name="shopify-api-key" content="SHOPIFY_API_KEY_PLACEHOLDER" />
+    
+    <!-- Inject Shopify API Key from environment variables -->
+    <script>
+      // Get API key from environment or use a default for development
+      const apiKey = '98d5cae75b3fdce1011668a7b6bdc8e2'; // Your actual API key
+      document.querySelector('meta[name="shopify-api-key"]').setAttribute('content', apiKey);
+    </script>
+    
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
   </head>
 
   <body>

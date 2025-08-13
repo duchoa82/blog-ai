@@ -1,42 +1,28 @@
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Frame, Navigation } from "@shopify/polaris";
+import { Outlet } from "react-router-dom";
+import { NavMenu } from '@shopify/app-bridge-react';
+import { useAppBridge } from '@shopify/app-bridge-react';
 import "./ShopifyLayout.css";
 
 const ShopifyLayout = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const app = useAppBridge();
 
-  const navigation = [
-    { name: "Dashboard", href: "/" },
-    { name: "Blogs", href: "/blogs" },
-    { name: "Pricing", href: "/pricing" },
-    { name: "Settings", href: "/settings" },
-  ];
-
-  const handleNavigation = (url: string) => {
-    navigate(url);
-  };
-
-  const navigationMarkup = (
-    <Navigation location={location.pathname}>
-      <Navigation.Section
-        items={navigation.map((item) => ({
-          url: item.href,
-          label: item.name,
-          onClick: () => handleNavigation(item.href),
-        }))}
-      />
-    </Navigation>
-  );
+  console.log('🚀 ShopifyLayout component loaded with App Bridge React!');
+  console.log('🔍 App Bridge app:', app);
 
   return (
     <div className="shopify-layout">
-      {/* Use the same Frame + Navigation structure as local app */}
-      <Frame navigation={navigationMarkup}>
-        <div className="shopify-main-content">
-          <Outlet />
-        </div>
-      </Frame>
+      {/* Shopify App Bridge React Navigation Menu */}
+      <NavMenu>
+        <a href="/" rel="home">Dashboard</a>
+        <a href="/blogs">Blogs</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/settings">Settings</a>
+      </NavMenu>
+
+      {/* Main Content Area */}
+      <div className="shopify-main-content">
+        <Outlet />
+      </div>
     </div>
   );
 };
