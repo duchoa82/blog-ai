@@ -76,9 +76,12 @@ export const testMultipleShopFormats = async () => {
     console.log(`Result: ${result.success ? '✅ Success' : '❌ Failed'}`);
     if (result.success) {
       console.log('Sample product:', result.products?.[0]?.node);
-      break; // Stop at first successful shop
+      return result; // Return the successful result
     }
   }
+  
+  // Return null if no shops worked
+  return null;
 };
 
 // Test with current context shop

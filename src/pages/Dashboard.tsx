@@ -54,36 +54,44 @@ const Dashboard = () => {
       } else {
         // If current shop fails, test with sample shops
         console.log('Current shop failed, testing sample shops...');
-        await testMultipleShopFormats();
+        const sampleResult = await testMultipleShopFormats();
         
-        // For demo purposes, show a sample result
-        setTestResult({
-          type: 'sample',
-          success: true,
-          message: 'API test completed - check console for details',
-          sampleData: {
-            products: [
-              {
-                id: 'sample-1',
-                title: 'Sample Product 1',
-                handle: 'sample-product-1',
-                description: 'This is a sample product for testing',
-                product_type: 'Sample',
-                vendor: 'Sample Vendor',
-                images: [{ src: 'https://via.placeholder.com/150', alt: 'Sample Product' }]
-              },
-              {
-                id: 'sample-2',
-                title: 'Sample Product 2',
-                handle: 'sample-product-2',
-                description: 'Another sample product for testing',
-                product_type: 'Sample',
-                vendor: 'Sample Vendor',
-                images: [{ src: 'https://via.placeholder.com/150', alt: 'Sample Product' }]
-              }
-            ]
-          }
-        });
+        // Use the actual result from the API test, not hardcoded sample data
+        if (sampleResult && sampleResult.success) {
+          setTestResult({
+            type: 'sample',
+            ...sampleResult
+          });
+        } else {
+          // Only fall back to sample data if API completely fails
+          setTestResult({
+            type: 'fallback',
+            success: false,
+            message: 'API test failed - using fallback sample data',
+            sampleData: {
+              products: [
+                {
+                  id: 'sample-1',
+                  title: 'Sample Product 1',
+                  handle: 'sample-product-1',
+                  description: 'This is a sample product for testing',
+                  product_type: 'Sample',
+                  vendor: 'Sample Vendor',
+                  images: [{ src: 'https://via.placeholder.com/150', alt: 'Sample Product' }]
+                },
+                {
+                  id: 'sample-2',
+                  title: 'Sample Product 2',
+                  handle: 'sample-product-2',
+                  description: 'Another sample product for testing',
+                  product_type: 'Sample',
+                  vendor: 'Sample Vendor',
+                  images: [{ src: 'https://via.placeholder.com/150', alt: 'Sample Product' }]
+                }
+              ]
+            }
+          });
+        }
       }
     } catch (error) {
       console.error('❌ API test error:', error);
@@ -159,10 +167,48 @@ const Dashboard = () => {
                         {testResult.message}
                       </Text>
                       
-                      {testResult.sampleData?.products && (
+                      {/* Real Products from API */}
+                      {testResult.products && testResult.products.length > 0 && (
                         <div style={{ marginTop: '12px' }}>
                           <Text variant="bodySm" as="p" fontWeight="semibold">
-                            Sample Products:
+                            Real Products from Store:
+                          </Text>
+                          <div style={{ marginTop: '8px' }}>
+                            {testResult.products.map((product: any, index: number) => (
+                              <div key={product.node?.id || index} style={{
+                                padding: '8px',
+                                backgroundColor: 'white',
+                                borderRadius: '4px',
+                                marginTop: '4px',
+                                border: '1px solid #e1e3e5'
+                              }}>
+                                <Text variant="bodySm" as="p" fontWeight="semibold">
+                                  {product.node?.title || 'Unknown Product'}
+                                </Text>
+                                <Text variant="bodySm" as="p" tone="subdued">
+                                  {product.node?.description || 'No description available'}
+                                </Text>
+                                {product.node?.productType && (
+                                  <Text variant="bodySm" as="p" tone="subdued">
+                                    Type: {product.node.productType}
+                                  </Text>
+                                )}
+                                {product.node?.vendor && (
+                                  <Text variant="bodySm" as="p" tone="subdued">
+                                    Vendor: {product.node.vendor}
+                                  </Text>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Fallback Sample Data */}
+                      {testResult.sampleData?.products && testResult.type === 'fallback' && (
+                        <div style={{ marginTop: '12px' }}>
+                          <Text variant="bodySm" as="p" fontWeight="semibold">
+                            Sample Products (Fallback):
                           </Text>
                           <div style={{ marginTop: '8px' }}>
                             {testResult.sampleData.products.map((product: any) => (
