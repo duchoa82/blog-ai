@@ -47,41 +47,118 @@ export const shopifyApp = (() => {
   }
 })();
 
-// Shopify API endpoints
-export const SHOPIFY_API = {
-  // Media/Assets API
-  assets: '/admin/api/2023-10/assets.json',
-  // Blog API
-  blogs: '/admin/api/2023-10/blogs.json',
-  articles: '/admin/api/2023-10/articles.json',
-  // SEO API
-  metafields: '/admin/api/2023-10/metafields.json',
+// Storefront API endpoints (tokenless access)
+export const STOREFRONT_API = {
+  // Products
+  products: '/api/2025-07/graphql.json',
+  // Blogs and Articles
+  blogs: '/api/2025-07/graphql.json',
+  // Collections
+  collections: '/api/2025-07/graphql.json',
 };
 
-// Helper function to get Shopify API URL
-export const getShopifyApiUrl = (endpoint: string) => {
-  const shop = new URLSearchParams(window.location.search).get('shop');
+// Helper function to get Shopify Storefront API URL
+export const getShopifyStorefrontUrl = (shop: string) => {
   if (!shop) {
-    throw new Error('Shop parameter not found in URL');
+    throw new Error('Shop parameter is required');
   }
-  return `https://${shop}${endpoint}`;
+  
+  // Ensure shop has .myshopify.com domain
+  if (!shop.includes('myshopify.com')) {
+    shop = `${shop}.myshopify.com`;
+  }
+  
+  return `https://${shop}`;
 };
 
-// Helper function to make authenticated requests
-export const makeShopifyRequest = async (endpoint: string, options: RequestInit = {}) => {
-  const url = getShopifyApiUrl(endpoint);
+// Helper function to make tokenless Storefront API requests
+export const makeStorefrontRequest = async (shop: string, query: string, variables: any = {}) => {
+  const url = `${getShopifyStorefrontUrl(shop)}${STOREFRONT_API.products}`;
   
   const response = await fetch(url, {
-    ...options,
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
     },
+    body: JSON.stringify({
+      query,
+      variables,
+    }),
   });
 
   if (!response.ok) {
-    throw new Error(`Shopify API error: ${response.status}`);
+    throw new Error(`Storefront API error: ${response.status}`);
   }
 
   return response.json();
+};
+
+// GraphQL queries for Storefront API
+export const STOREFRONT_QUERIES = {
+  // Get products
+  products: `
+    query GetProducts($first: Int!) {
+      products(first: $first) {
+        edges {
+          node {
+            id
+            title
+            handle
+            description
+            images(first: 1) {
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }
+            productType
+            vendor
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+          }
+        }
+      }
+    }
+  `,
+  
+  // Get blogs
+  blogs: `
+    query GetBlogs($first: Int!) {
+      blogs(first: $first) {
+        edges {
+          node {
+            id
+            title
+            handle
+            description
+          }
+        }
+      }
+    }
+  `,
+  
+  // Get blog articles
+  blogArticles: `
+    query GetBlogArticles($blogHandle: String!, $first: Int!) {
+      blog(handle: $blogHandle) {
+        articles(first: $first) {
+          edges {
+            node {
+              id
+              title
+              handle
+              content
+              publishedAt
+            }
+          }
+        }
+      }
+    }
+  `,
 };

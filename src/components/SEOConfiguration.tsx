@@ -13,18 +13,22 @@ import {
   Tag,
   Badge,
   LegacyStack,
-  RadioButton
+  RadioButton,
+  Spinner
 } from "@shopify/polaris";
 import {
   PlusIcon,
   ChartHistogramFlatIcon,
   QuestionCircleIcon,
   StarIcon,
-  SearchIcon,
   MagicIcon,
-  StarFilledIcon
+  StarFilledIcon,
+  SearchIcon
 } from "@shopify/polaris-icons";
 import ApiService from "../services/api";
+import { fetchShopifyProducts } from "../services/shopify-product";
+
+import { ShopifyProduct } from "../services/shopify-product";
 
 interface SEOConfigurationProps {
   businessDescription?: string;
@@ -33,6 +37,8 @@ interface SEOConfigurationProps {
   onTargetCustomerChange?: (value: string) => void;
   onGenerate?: (generatedContent?: string, title?: string) => void;
   isGenerating?: boolean;
+  selectedProduct?: ShopifyProduct;
+  onProductSelect?: (product: ShopifyProduct) => void;
 }
 
 export const SEOConfiguration = ({
@@ -41,7 +47,9 @@ export const SEOConfiguration = ({
   onBusinessDescriptionChange,
   onTargetCustomerChange,
   onGenerate,
-  isGenerating = false
+  isGenerating = false,
+  selectedProduct,
+  onProductSelect
 }: SEOConfigurationProps) => {
   const [writingStyle, setWritingStyle] = useState("academic");
   const [voiceTone, setVoiceTone] = useState("first_person");
@@ -54,55 +62,40 @@ export const SEOConfiguration = ({
   const [showTitleModal, setShowTitleModal] = useState(false);
   const [selectedTitle, setSelectedTitle] = useState("");
   const [isKeywordInputFocused, setIsKeywordInputFocused] = useState(false);
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState("");
-  const [tempSelectedProduct, setTempSelectedProduct] = useState("");
+
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [recommendedTitle, setRecommendedTitle] = useState<string | null>(null);
   const [tempSelectedTitle, setTempSelectedTitle] = useState<string | null>(null);
   const [isGeneratingBlog, setIsGeneratingBlog] = useState(false);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [localSelectedProduct, setLocalSelectedProduct] = useState<ShopifyProduct | null>(selectedProduct || null);
+  const [storeProducts, setStoreProducts] = useState<ShopifyProduct[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
   const businessDescriptionRef = useRef<HTMLDivElement>(null);
   const targetCustomerRef = useRef<HTMLDivElement>(null);
 
-  // Product data
-  const products = [
-    {
-      id: "watch1",
-      name: "Aesop Ultra Thin Men's Automatic Mechanical Watch - Stylish Leather Band",
-      image: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=60&h=60&fit=crop",
-      status: null
-    },
-    {
-      id: "watch2", 
-      name: "BOBO BIRD Luxury Men's Digital Bamboo Watch - Unique LED Time Display",
-      image: "https://images.unsplash.com/photo-1547996160-81dfa63595aa?w=60&h=60&fit=crop",
-      status: null
-    },
-    {
-      id: "watch3",
-      name: "Casio MQ-24 Quartz Watch for Men - 30m Waterproof Military Style",
-      image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=60&h=60&fit=crop",
-      status: null
-    },
-    {
-      id: "watch4",
-      name: "Casio MQ-24 Quartz Watch for Men - 30m Waterproof Military Style (Copy)",
-      image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=60&h=60&fit=crop",
-      status: "Draft"
+
+
+  // Sync localSelectedProduct with selectedProduct prop
+  useEffect(() => {
+    setLocalSelectedProduct(selectedProduct || null);
+  }, [selectedProduct]);
+
+  // Fetch products when product modal opens
+  useEffect(() => {
+    if (showProductModal && storeProducts.length === 0) {
+      fetchStoreProducts();
     }
-  ];
+  }, [showProductModal]);
 
-  // Helper functions to get product information
-  const getProductName = (productId: string) => {
-    const product = products.find(p => p.id === productId);
-    return product ? product.name : "Unknown Product";
-  };
-
-  const getProductImage = (productId: string) => {
-    const product = products.find(p => p.id === productId);
-    return product ? product.image : "";
-  };
+  // Filter products based on search query
+  const filteredProducts = storeProducts.filter(product =>
+    product.title.toLowerCase().includes(productSearchQuery.toLowerCase()) ||
+    product.product_type?.toLowerCase().includes(productSearchQuery.toLowerCase()) ||
+    product.vendor?.toLowerCase().includes(productSearchQuery.toLowerCase())
+  );
 
   // Style the textarea elements after component mounts to prevent auto-resize
   useEffect(() => {
@@ -149,6 +142,21 @@ export const SEOConfiguration = ({
 
   const removeKeywordTag = (tagToRemove: string) => {
     setKeywordTags(keywordTags.filter(tag => tag !== tagToRemove));
+  };
+
+  // Fetch products from the store
+  const fetchStoreProducts = async () => {
+    setIsLoadingProducts(true);
+    try {
+      const products = await fetchShopifyProducts();
+      setStoreProducts(products);
+    } catch (error) {
+      console.error('Error fetching store products:', error);
+      // Fallback to mock data if API fails
+      setStoreProducts([]);
+    } finally {
+      setIsLoadingProducts(false);
+    }
   };
 
   const handleGenerateTitle = async () => {
@@ -273,19 +281,7 @@ export const SEOConfiguration = ({
     }
   };
 
-  const handleShowProductModal = () => {
-    setShowProductModal(true);
-    setTempSelectedProduct(selectedProduct); // Initialize with current selection
-  };
-
-  const handleProductSelection = (product: string) => {
-    setTempSelectedProduct(product);
-  };
-
-  const handleConfirmProductSelection = () => {
-    setSelectedProduct(tempSelectedProduct);
-    setShowProductModal(false);
-  };
+  
 
   const handleGenerateBlog = async () => {
     console.log('handleGenerateBlog called!');
@@ -363,10 +359,12 @@ Return only in the following Markdown structure:
       console.log('Prompt:', prompt);
 
       // Call our backend API using ApiService
-      const data = await ApiService.generateBlog(
-        prompt, 
-        import.meta.env.VITE_GEMINI_API_KEY || 'your-api-key-here'
-      );
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error('Gemini API key not configured. Please check your environment variables.');
+      }
+      
+      const data = await ApiService.generateBlog(prompt, apiKey);
       
       const generatedContent = data.content;
       
@@ -592,8 +590,10 @@ Return only in the following Markdown structure:
                           <div style={{ padding: "16px", backgroundColor: "#f6f6f7" }}>
                             <InlineStack gap="200" align="start">
                               <img 
-                                src={getProductImage(selectedProduct)}
-                                alt={getProductName(selectedProduct)}
+                                src={selectedProduct.images && selectedProduct.images.length > 0 
+                                  ? selectedProduct.images[0].src 
+                                  : "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop"}
+                                alt={selectedProduct.title}
                                 style={{ 
                                   width: "60px", 
                                   height: "60px", 
@@ -603,7 +603,7 @@ Return only in the following Markdown structure:
                               />
                               <BlockStack gap="100">
                                 <Text variant="bodyMd" as="p" fontWeight="bold">
-                                  {getProductName(selectedProduct)}
+                                  {selectedProduct.title}
                                 </Text>
                                 <Text variant="bodySm" as="p" tone="subdued">
                                   This product will be featured in your blog post
@@ -613,12 +613,12 @@ Return only in the following Markdown structure:
                           </div>
                           <div style={{ padding: "12px", borderTop: "1px solid #c9cccf" }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <Button variant="secondary" size="slim" onClick={handleShowProductModal}>
+                              <Button variant="secondary" size="slim" onClick={() => setShowProductModal(true)}>
                                 Change product
                               </Button>
-                              <Button variant="plain" onClick={() => setSelectedProduct("")}>
-                                Remove
-                              </Button>
+                              <Text variant="bodyMd" as="p" tone="subdued">
+                                Product selected from previous page
+                              </Text>
                             </div>
                           </div>
                         </div>
@@ -630,10 +630,13 @@ Return only in the following Markdown structure:
                           textAlign: "center",
                           backgroundColor: "#f6f6f7"
                         }}>
+                          <Text variant="bodyMd" as="p" style={{ marginBottom: "16px" }}>
+                            No product selected
+                          </Text>
                           <Button 
                             variant="secondary" 
                             icon={PlusIcon}
-                            onClick={handleShowProductModal}
+                            onClick={() => setShowProductModal(true)}
                           >
                             Insert a product into the post
                           </Button>
@@ -875,11 +878,16 @@ Return only in the following Markdown structure:
       <Modal
         open={showProductModal}
         onClose={() => setShowProductModal(false)}
-        title="Select product"
+        title="Select a Product from Your Store"
         primaryAction={{
-          content: 'Select',
-          onAction: handleConfirmProductSelection,
-          disabled: !tempSelectedProduct
+          content: 'Confirm Selection',
+          onAction: () => {
+            if (localSelectedProduct && onProductSelect) {
+              onProductSelect(localSelectedProduct);
+              setShowProductModal(false);
+            }
+          },
+          disabled: !localSelectedProduct
         }}
         secondaryActions={[
           {
@@ -890,107 +898,85 @@ Return only in the following Markdown structure:
       >
         <Modal.Section>
           <BlockStack gap="400">
-            {/* Search and Filter Section */}
-            <InlineStack gap="200" align="space-between">
-              <div style={{ flex: "1" }}>
-                <div style={{
-                  border: "1px solid #c9cccf",
-                  borderRadius: "8px",
-                  padding: "6px 12px",
-                  height: "32px",
-                  display: "flex",
-                  alignItems: "center",
-                  backgroundColor: "#ffffff"
-                }}>
-                  <div style={{ marginRight: "8px" }}>
-                    <Icon source={SearchIcon} tone="base" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search products"
-                    autoComplete="off"
-                    style={{
-                      border: "none",
-                      outline: "none",
-                      flex: "1",
-                      fontSize: "14px",
-                      fontFamily: "inherit",
-                      color: "inherit",
-                      backgroundColor: "transparent"
-                    }}
-                  />
-                </div>
-              </div>
-              <Select
-                label=""
-                labelHidden
-                options={[
-                  { label: "Search by All", value: "all" },
-                  { label: "Search by Title", value: "title" },
-                  { label: "Search by Description", value: "description" }
-                ]}
-                value="all"
-                onChange={() => {}}
-              />
-            </InlineStack>
+            <Text variant="bodyMd" as="p" tone="subdued">
+              Select a product to feature in your blog post. This will help generate more relevant and engaging content.
+            </Text>
             
-            <Button variant="secondary" size="slim">
-              Add filter +
-            </Button>
-
+            {/* Product Search */}
+            <TextField
+              label="Search products"
+              value={productSearchQuery}
+              onChange={setProductSearchQuery}
+              placeholder="Type to search products..."
+              prefix={<SearchIcon />}
+            />
+            
             {/* Product List */}
-            <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-              <BlockStack gap="200">
-                {products.map((product) => (
-                  <div key={product.id} style={{ 
-                    display: "flex", 
-                    alignItems: "center", 
-                    gap: "12px",
-                    padding: "8px",
-                    borderRadius: "4px",
-                                         backgroundColor: tempSelectedProduct === product.id ? "#f6f6f7" : "transparent"
-                  }}>
-                                         <input
-                       type="checkbox"
-                       checked={tempSelectedProduct === product.id}
-                       onChange={() => handleProductSelection(product.id)}
-                       style={{ margin: 0 }}
-                     />
-                    <img 
-                      src={product.image} 
-                      alt={product.name}
-                      style={{ 
-                        width: "40px", 
-                        height: "40px", 
-                        borderRadius: "4px",
+            {isLoadingProducts ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <Spinner size="large" />
+                <Text variant="bodyMd" as="p" style={{ marginTop: '12px' }}>
+                  Loading products from your store...
+                </Text>
+              </div>
+            ) : filteredProducts.length > 0 ? (
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '16px',
+                      borderRadius: '8px',
+                      backgroundColor: localSelectedProduct?.id === product.id ? '#f0f9ff' : '#f6f6f7',
+                      border: localSelectedProduct?.id === product.id ? '2px solid #0ea5e9' : '1px solid #e1e3e5',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onClick={() => setLocalSelectedProduct(product)}
+                  >
+                    <img
+                      src={product.images && product.images.length > 0
+                        ? product.images[0].src
+                        : "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=300&h=300&fit=crop"}
+                      alt={product.title}
+                      style={{
+                        width: "60px",
+                        height: "60px",
+                        borderRadius: "8px",
                         objectFit: "cover"
                       }}
                     />
                     <div style={{ flex: "1" }}>
-                      <Text variant="bodyMd" as="p">
-                        {product.name}
+                      <Text variant="headingMd" as="h4">
+                        {product.title}
+                      </Text>
+                      <Text variant="bodyMd" as="p" tone="subdued">
+                        {product.product_type} • {product.vendor}
+                      </Text>
+                      <Text variant="bodySm" as="p" tone="subdued">
+                        Product URL: {product.handle}
                       </Text>
                     </div>
-                    {product.status && (
-                      <Badge tone="info">{product.status}</Badge>
+                    {localSelectedProduct?.id === product.id && (
+                      <Badge tone="success">Selected</Badge>
                     )}
                   </div>
                 ))}
-              </BlockStack>
-            </div>
-
-            {/* Footer Status */}
-            <div style={{ 
-              display: "flex", 
-              justifyContent: "space-between", 
-              alignItems: "center",
-              paddingTop: "16px",
-              borderTop: "1px solid #e1e3e5"
-            }}>
-              <Text variant="bodySm" as="span" tone="subdued">
-                {tempSelectedProduct ? "1/1" : "0/1"} products selected
-              </Text>
-            </div>
+              </div>
+            ) : (
+              <div style={{ 
+                padding: "16px", 
+                textAlign: "center",
+                color: "#6d7175"
+              }}>
+                <Text variant="bodyMd" as="p">
+                  {productSearchQuery ? 'No products found matching your search.' : 'No products found in your store.'}
+                </Text>
+              </div>
+            )}
           </BlockStack>
         </Modal.Section>
       </Modal>

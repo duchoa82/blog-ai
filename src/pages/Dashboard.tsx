@@ -1,372 +1,258 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Page,
   Card,
   Button,
-  Badge,
-  Layout,
   Text,
   BlockStack,
   InlineStack,
-  Grid,
+  Badge,
   Icon,
-  TextField,
-  Tabs,
-  Link,
-  Select,
-  ChoiceList
-} from "@shopify/polaris";
+  Layout,
+  LegacyStack,
+  Spinner
+} from '@shopify/polaris';
 import {
-  ChartHistogramFlatIcon,
-  ProductIcon,
-  CalendarIcon,
-  ViewIcon,
   PlusIcon,
-  InfoIcon,
+  ChartHistogramFlatIcon,
   QuestionCircleIcon,
-  SettingsIcon,
-  ChevronDownIcon,
-  ChevronUpIcon
-} from "@shopify/polaris-icons";
-import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { getBusinessDescription, getTargetCustomer, setBusinessDescription as setSharedBusinessDescription, setTargetCustomer as setSharedTargetCustomer } from "../lib/sharedData";
+  StarIcon,
+  MagicIcon,
+  StarFilledIcon,
+  PlayIcon
+} from '@shopify/polaris-icons';
+import { testCurrentShop, testMultipleShopFormats } from '../utils/api-test';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [businessDescription, setBusinessDescription] = useState("");
-  const [targetCustomer, setTargetCustomer] = useState("");
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [selectedCreditTab, setSelectedCreditTab] = useState(0);
-  const [isSetupExpanded, setIsSetupExpanded] = useState(true);
-  
-  // Brand Voice Setup states
-  const [selectedTones, setSelectedTones] = useState<string[]>([]);
-  const [formalityLevel, setFormalityLevel] = useState("");
-  const [selectedPersonalities, setSelectedPersonalities] = useState<string[]>([]);
-
-  // Load shared data on component mount
-  useEffect(() => {
-    setBusinessDescription(getBusinessDescription());
-    setTargetCustomer(getTargetCustomer());
-  }, []);
-
-  // Handle business description change
-  const handleBusinessDescriptionChange = (value: string) => {
-    setBusinessDescription(value);
-    setSharedBusinessDescription(value);
-  };
-
-  // Handle target customer change
-  const handleTargetCustomerChange = (value: string) => {
-    setTargetCustomer(value);
-    setSharedTargetCustomer(value);
-  };
-  
-  const stats = [
-    { label: "Total posts created", value: "1", icon: ChartHistogramFlatIcon, trend: "+12%" },
-    { label: "Visible posts", value: "1", icon: ViewIcon, trend: "+3%" },
-    { label: "Hidden posts", value: "0", icon: ProductIcon, trend: "+25%" },
-  ];
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
 
   const primaryAction = {
     content: 'Generate New Post',
     icon: PlusIcon,
-    onAction: () => navigate('/generate'),
+    onAction: () => navigate('/generate', { state: { from: 'dashboard' } }),
   };
 
-  const tabs = [
-    {
-      id: 'published',
-      content: 'Published',
-      accessibilityLabel: 'Published posts',
-      panelID: 'published-panel',
-    },
-    {
-      id: 'draft',
-      content: 'Draft',
-      accessibilityLabel: 'Draft posts',
-      panelID: 'draft-panel',
-    },
-  ];
-
-  const creditTabs = [
-    {
-      id: 'monthly',
-      content: 'Monthly',
-      accessibilityLabel: 'Monthly credits',
-      panelID: 'monthly-panel',
-    },
-    {
-      id: 'lifetime',
-      content: 'Lifetime',
-      accessibilityLabel: 'Lifetime credits',
-      panelID: 'lifetime-panel',
-    },
-  ];
-
-  const brandVoiceOptions = {
-    tones: [
-      { label: 'Inspirational', value: 'inspirational' },
-      { label: 'Professional', value: 'professional' },
-      { label: 'Casual', value: 'casual' },
-      { label: 'Friendly', value: 'friendly' },
-      { label: 'Authoritative', value: 'authoritative' }
-    ],
-    formalityLevels: [
-      { label: 'Formal', value: 'formal' },
-      { label: 'Semi-formal', value: 'semi-formal' },
-      { label: 'Casual', value: 'casual' }
-    ],
-    personalities: [
-      { label: 'Energetic', value: 'energetic' },
-      { label: 'Calm', value: 'calm' },
-      { label: 'Creative', value: 'creative' },
-      { label: 'Analytical', value: 'analytical' },
-      { label: 'Empathetic', value: 'empathetic' }
-    ]
+  const handleTestAPI = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    
+    try {
+      console.log('🧪 Starting API test...');
+      
+      // First test current context shop
+      const currentResult = await testCurrentShop();
+      console.log('Current shop test result:', currentResult);
+      
+      if (currentResult?.success) {
+        setTestResult({
+          type: 'current',
+          ...currentResult
+        });
+      } else {
+        // If current shop fails, test with sample shops
+        console.log('Current shop failed, testing sample shops...');
+        await testMultipleShopFormats();
+        
+        // For demo purposes, show a sample result
+        setTestResult({
+          type: 'sample',
+          success: true,
+          message: 'API test completed - check console for details',
+          sampleData: {
+            products: [
+              {
+                id: 'sample-1',
+                title: 'Sample Product 1',
+                handle: 'sample-product-1',
+                description: 'This is a sample product for testing',
+                product_type: 'Sample',
+                vendor: 'Sample Vendor',
+                images: [{ src: 'https://via.placeholder.com/150', alt: 'Sample Product' }]
+              },
+              {
+                id: 'sample-2',
+                title: 'Sample Product 2',
+                handle: 'sample-product-2',
+                description: 'Another sample product for testing',
+                product_type: 'Sample',
+                vendor: 'Sample Vendor',
+                images: [{ src: 'https://via.placeholder.com/150', alt: 'Sample Product' }]
+              }
+            ]
+          }
+        });
+      }
+    } catch (error) {
+      console.error('❌ API test error:', error);
+      setTestResult({
+        type: 'error',
+        success: false,
+        message: `Test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   return (
     <Page
       title="Dashboard"
-      subtitle="Monitor your blog performance and manage content creation"
       primaryAction={primaryAction}
     >
-      <div style={{ 
-        maxWidth: "990px", 
-        margin: "0 auto",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center"
-      }}>
-        <Layout>
-          {/* Onboarding Section */}
-          <Layout.Section>
-            <Card>
-              <div style={{ padding: "16px" }}>
-                <InlineStack align="space-between">
-                  <BlockStack gap="100">
-                    <Text variant="headingMd" as="h3">Brand Voice Setup</Text>
-                    <Text variant="bodyMd" tone="subdued" as="span">
-                      Configure your brand's voice and personality for AI content generation.
-                    </Text>
-                  </BlockStack>
-                  <div 
-                    style={{ 
-                      width: "32px", 
-                      height: "32px", 
-                      display: "flex", 
-                      alignItems: "center", 
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      borderRadius: "4px",
-                      backgroundColor: "var(--p-surface)",
-                      border: "1px solid var(--p-border)",
-                      transition: "background-color 0.2s ease"
-                    }}
-                    onClick={() => setIsSetupExpanded(!isSetupExpanded)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--p-surface-hovered)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = "var(--p-surface)";
-                    }}
-                  >
-                    <Icon 
-                      source={isSetupExpanded ? ChevronUpIcon : ChevronDownIcon} 
-                      tone="base" 
-                    />
-                  </div>
-                </InlineStack>
-              </div>
-              {isSetupExpanded && (
-                <div style={{ padding: "0 16px 16px" }}>
-                  <BlockStack gap="400">
-                    {/* Brand Voice Setup */}
-                    <BlockStack gap="200">
-                      
-                      <InlineStack gap="400" align="start">
-                        {/* Tone Selection */}
-                        <div style={{ flex: "1" }}>
-                          <Select
-                            label="Tone"
-                            options={brandVoiceOptions.tones}
-                            value={selectedTones[0] || ""}
-                            onChange={(value) => setSelectedTones(value ? [value] : [])}
-                          />
-                        </div>
-                        
-                        {/* Formality Level */}
-                        <div style={{ flex: "1" }}>
-                          <Select
-                            label="Formality Level"
-                            options={brandVoiceOptions.formalityLevels}
-                            value={formalityLevel}
-                            onChange={setFormalityLevel}
-                          />
-                        </div>
-                        
-                        {/* Brand Personality */}
-                        <div style={{ flex: "1" }}>
-                          <Select
-                            label="Brand Personality"
-                            options={brandVoiceOptions.personalities}
-                            value={selectedPersonalities[0] || ""}
-                            onChange={(value) => setSelectedPersonalities(value ? [value] : [])}
-                          />
-                        </div>
-                      </InlineStack>
-                    </BlockStack>
-                    
-
-                    
-                    <BlockStack gap="200">
-                      <InlineStack gap="400" align="start">
-                        <div style={{ flex: "1" }}>
-                          <TextField
-                            label="Business description"
-                            value={businessDescription}
-                            onChange={handleBusinessDescriptionChange}
-                            placeholder="Example: Premium cotton t-shirts and sustainable fashion for eco-conscious consumers"
-                            multiline={3}
-                            maxLength={500}
-                            showCharacterCount
-                            autoComplete="off"
-                          />
-                        </div>
-                        <div style={{ flex: "1" }}>
-                          <TextField
-                            label="Target customer"
-                            value={targetCustomer}
-                            onChange={handleTargetCustomerChange}
-                            placeholder="Example: Young professionals aged 25-40 who value sustainability and style"
-                            multiline={3}
-                            maxLength={500}
-                            showCharacterCount
-                            autoComplete="off"
-                          />
-                        </div>
-                      </InlineStack>
-                    </BlockStack>
-                  </BlockStack>
-                </div>
-              )}
-            </Card>
-          </Layout.Section>
-
-          {/* Stats Cards - Centered */}
-          <Layout.Section>
-            <div style={{ display: "flex", gap: "16px" }}>
-              {/* Total posts created card - 1/3 width */}
-              <div style={{ flex: "1", minWidth: "0" }}>
-                <Card>
-                  <div style={{ padding: "16px", textAlign: "left" }}>
-                    <div style={{ fontWeight: "bold", fontSize: "calc(1rem + 8px)" }}>
-                      <Text variant="bodyMd" tone="subdued" as="span">
-                        Total posts created
-                      </Text>
-                    </div>
-                    <div style={{ marginTop: "24px" }}>
-                      <div style={{ fontSize: "2em", fontWeight: "bold" }}>
-                        <Text variant="headingXl" as="h2">
-                          1
-                        </Text>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              {/* Visible and Hidden posts card - 2/3 width */}
-              <div style={{ flex: "2", minWidth: "0" }}>
-                <Card>
-                  <div style={{ padding: "16px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      {/* Visible posts */}
-                      <div style={{ flex: 1, textAlign: "left", borderRight: "1px solid #e1e3e5", paddingRight: "16px" }}>
-                        <div style={{ fontWeight: "bold", fontSize: "calc(1rem + 8px)" }}>
-                          <Text variant="bodyMd" tone="subdued" as="span">
-                            Visible posts
-                          </Text>
-                        </div>
-                        <div style={{ marginTop: "24px" }}>
-                          <div style={{ fontSize: "2em", fontWeight: "bold" }}>
-                            <Text variant="headingXl" as="h2">
-                              1
-                            </Text>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Hidden posts */}
-                      <div style={{ flex: 1, textAlign: "left", paddingLeft: "16px" }}>
-                        <div style={{ fontWeight: "bold", fontSize: "calc(1rem + 8px)" }}>
-                          <Text variant="bodyMd" tone="subdued" as="span">
-                            Hidden posts
-                          </Text>
-                        </div>
-                        <div style={{ marginTop: "24px" }}>
-                          <div style={{ fontSize: "2em", fontWeight: "bold" }}>
-                            <Text variant="headingXl" as="h2">
-                              0
-                            </Text>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </div>
-          </Layout.Section>
-
-          {/* Support Section */}
-          <Layout.Section>
-            <Grid>
-              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                <Card>
-                  <div style={{ padding: "16px", textAlign: "left" }}>
-                    <div style={{ marginBottom: "16px" }}>
-                      <Text variant="headingMd" fontWeight="semibold" as="h4">
-                        Help Center
-                      </Text>
-                    </div>
-                    <div style={{ marginBottom: "8px" }}>
-                      <Text variant="bodyMd" tone="subdued" as="span">
-                        Find quick answers in detailed tutorials and frequently asked questions.
-                      </Text>
-                    </div>
-                    <Link url="#" removeUnderline>
-                      Help Center
-                    </Link>
-                  </div>
-                </Card>
-              </Grid.Cell>
+      <Layout>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h2">
+                Welcome to Blog SEO AI
+              </Text>
+              <Text variant="bodyMd" as="p">
+                Generate engaging blog content with AI assistance and integrate with your Shopify store.
+              </Text>
               
-              <Grid.Cell columnSpan={{ xs: 6, sm: 6, md: 6, lg: 6, xl: 6 }}>
-                <Card>
-                  <div style={{ padding: "16px", textAlign: "left" }}>
-                    <div style={{ marginBottom: "16px" }}>
-                      <Text variant="headingMd" fontWeight="semibold" as="h4">
-                        Customer support
+              {/* API Test Section */}
+              <div style={{ 
+                border: '1px solid #c9cccf', 
+                borderRadius: '8px', 
+                padding: '16px',
+                backgroundColor: '#f6f6f7'
+              }}>
+                <BlockStack gap="200">
+                  <Text variant="headingSm" as="h3" fontWeight="semibold">
+                    🧪 Test Storefront API
+                  </Text>
+                  <Text variant="bodyMd" as="p" tone="subdued">
+                    Test if the Storefront API is working and see sample data
+                  </Text>
+                  
+                  <InlineStack gap="200">
+                    <Button
+                      variant="secondary"
+                      icon={PlayIcon}
+                      onClick={handleTestAPI}
+                      loading={isTesting}
+                      disabled={isTesting}
+                    >
+                      {isTesting ? 'Testing...' : 'Test API'}
+                    </Button>
+                    
+                    {testResult && (
+                      <Badge tone={testResult.success ? 'success' : 'critical'}>
+                        {testResult.success ? '✅ Test Complete' : '❌ Test Failed'}
+                      </Badge>
+                    )}
+                  </InlineStack>
+                  
+                  {/* Test Results */}
+                  {testResult && (
+                    <div style={{ 
+                      marginTop: '12px',
+                      padding: '12px',
+                      backgroundColor: testResult.success ? '#f0f9ff' : '#fef2f2',
+                      border: `1px solid ${testResult.success ? '#0ea5e9' : '#f87171'}`,
+                      borderRadius: '6px'
+                    }}>
+                      <Text variant="bodyMd" as="p" fontWeight="semibold">
+                        {testResult.message}
                       </Text>
+                      
+                      {testResult.sampleData?.products && (
+                        <div style={{ marginTop: '12px' }}>
+                          <Text variant="bodySm" as="p" fontWeight="semibold">
+                            Sample Products:
+                          </Text>
+                          <div style={{ marginTop: '8px' }}>
+                            {testResult.sampleData.products.map((product: any) => (
+                              <div key={product.id} style={{
+                                padding: '8px',
+                                backgroundColor: 'white',
+                                borderRadius: '4px',
+                                marginTop: '4px',
+                                border: '1px solid #e1e3e5'
+                              }}>
+                                <Text variant="bodySm" as="p" fontWeight="semibold">
+                                  {product.title}
+                                </Text>
+                                <Text variant="bodySm" as="p" tone="subdued">
+                                  {product.description}
+                                </Text>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div style={{ marginBottom: "8px" }}>
-                      <Text variant="bodyMd" tone="subdued" as="span">
-                        Find quick answers in detailed tutorials and frequently asked questions.
-                      </Text>
-                    </div>
-                    <Link url="#" removeUnderline>
-                      Open chat
-                    </Link>
+                  )}
+                </BlockStack>
+              </div>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h2">
+                Quick Stats
+              </Text>
+              <Layout>
+                <Layout.Section oneThird>
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <Icon source={ChartHistogramFlatIcon} color="base" />
+                    <Text variant="headingLg" as="h3" fontWeight="bold">
+                      0
+                    </Text>
+                    <Text variant="bodyMd" as="p" tone="subdued">
+                      Blog Posts
+                    </Text>
                   </div>
-                </Card>
-              </Grid.Cell>
-            </Grid>
-          </Layout.Section>
-        </Layout>
-      </div>
+                </Layout.Section>
+                <Layout.Section oneThird>
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <Icon source={StarIcon} color="base" />
+                    <Text variant="headingLg" as="h3" fontWeight="bold">
+                      0
+                    </Text>
+                    <Text variant="bodyMd" as="p" tone="subdued">
+                      AI Generated
+                    </Text>
+                  </div>
+                </Layout.Section>
+                <Layout.Section oneThird>
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <Icon source={QuestionCircleIcon} color="base" />
+                    <Text variant="headingLg" as="h3" fontWeight="bold">
+                      0
+                    </Text>
+                    <Text variant="bodyMd" as="p" tone="subdued">
+                      Products
+                    </Text>
+                  </div>
+                </Layout.Section>
+              </Layout>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h2">
+                Brand Voice Setup
+              </Text>
+              <Text variant="bodyMd" as="p">
+                Configure your brand's voice and tone for AI-generated content.
+              </Text>
+              <Button variant="secondary" icon={MagicIcon}>
+                Configure Brand Voice
+              </Button>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+      </Layout>
     </Page>
   );
 };

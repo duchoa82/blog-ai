@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Page,
   Button,
@@ -23,8 +24,13 @@ import {
 } from "@shopify/polaris-icons";
 
 const Blogs = () => {
+  const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const handleAddBlogWithAI = () => {
+    navigate('/generate', { state: { from: 'blogs' } });
+  };
 
   const articles = [
     {
@@ -223,6 +229,7 @@ const Blogs = () => {
           <Button
             variant="primary"
             size="large"
+            onClick={handleAddBlogWithAI}
           >
             Add blogpost using AI
           </Button>

@@ -24,6 +24,7 @@ app.use(helmet({
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
+    'https://blog-shopify-production.up.railway.app',
     /https:\/\/.*\.myshopify\.com$/,
     /https:\/\/.*\.shopify\.com$/
   ],
@@ -38,7 +39,35 @@ app.use((req, res, next) => {
   // Remove conflicting X-Frame-Options header
   // Let CSP handle iframe permissions
   res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com");
+  
+  // Add CORS headers for preflight requests
+  res.header('Access-Control-Allow-Origin', 'https://blog-shopify-production.up.railway.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
   next();
+});
+
+// Handle preflight requests for specific routes
+app.options('/api/generate-blog', (req, res) => {
+  res.header('Access-Control-Allow-Origin', 'https://blog-shopify-production.up.railway.app');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.sendStatus(200);
+});
+
+app.options('/api/shopify/products', (req, res) => {
+  res.header('Access-Control-Allow-Origin', 'https://blog-shopify-production.up.railway.app');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.sendStatus(200);
+});
+
+app.options('/api/shopify/blogs', (req, res) => {
+  res.header('Access-Control-Allow-Origin', 'https://blog-shopify-production.up.railway.app');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.sendStatus(200);
 });
 
 // Health check endpoint
@@ -96,78 +125,15 @@ app.get('/auth/shopify', (req, res) => {
   }
 });
 
+// OAuth callback endpoint
 app.get('/auth/shopify/callback', async (req, res) => {
   try {
     const result = await ShopifyService.handleCallback(req.query);
     
-    // Check if OAuth was successful
-    if (result.success && result.accessToken) {
-      // OAuth successful - show success message and stay in the app
-      const successPage = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Installation Complete</title>
-          <style>
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              text-align: center; 
-              padding: 50px; 
-              background-color: #f6f6f7;
-              color: #202223;
-            }
-            .success-card {
-              background: white;
-              padding: 40px;
-              border-radius: 8px;
-              box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-              max-width: 500px;
-              margin: 0 auto;
-            }
-            .success-icon {
-              font-size: 48px;
-              margin-bottom: 20px;
-            }
-            .success-title {
-              color: #28a745;
-              font-size: 24px;
-              font-weight: 600;
-              margin-bottom: 20px;
-            }
-            .app-button {
-              background: #5c6ac4;
-              color: white;
-              padding: 12px 24px;
-              border: none;
-              border-radius: 6px;
-              font-size: 16px;
-              cursor: pointer;
-              margin: 10px;
-              text-decoration: none;
-              display: inline-block;
-            }
-            .app-button:hover {
-              background: #4f5aa8;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="success-card">
-            <div class="success-icon">✅</div>
-            <div class="success-title">App Installation Successful!</div>
-            <p>Your Blog SEO AI app is now installed and ready to use.</p>
-            <p><strong>Store:</strong> ${result.shop || 'Unknown Shop'}</p>
-            <p><strong>Access Token:</strong> Received</p>
-            <br>
-            <button class="app-button" onclick="window.location.href='/'">
-              🚀 Start Using Your App
-            </button>
-          </div>
-        </body>
-        </html>
-      `;
-      
-      res.send(successPage);
+    if (result.success) {
+      // OAuth successful - redirect to frontend with success
+      const redirectUrl = `${process.env.FRONTEND_URL || 'https://blog-shopify-production.up.railway.app'}/auth-success?shop=${result.shop}`;
+      res.redirect(redirectUrl);
     } else {
       // OAuth failed
       res.status(400).json({ error: 'OAuth failed', details: result });
@@ -176,6 +142,34 @@ app.get('/auth/shopify/callback', async (req, res) => {
   } catch (error) {
     console.error('OAuth callback error:', error);
     res.status(500).json({ error: 'OAuth callback failed', details: error.message });
+  }
+});
+
+// Session endpoint to get access token for frontend
+app.get('/api/shopify/session', async (req, res) => {
+  try {
+    const { shop } = req.query;
+    
+    if (!shop) {
+      return res.status(400).json({ error: 'Shop parameter is required' });
+    }
+    
+    // Get access token from session storage
+    const session = sessions.get(shop);
+    if (!session || !session.accessToken) {
+      return res.status(404).json({ error: 'No active session found for this shop' });
+    }
+    
+    res.json({ 
+      success: true, 
+      shop, 
+      accessToken: session.accessToken,
+      timestamp: session.timestamp
+    });
+    
+  } catch (error) {
+    console.error('Session fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch session' });
   }
 });
 

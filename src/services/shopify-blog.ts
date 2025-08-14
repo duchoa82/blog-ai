@@ -1,5 +1,34 @@
-import { makeShopifyRequest, SHOPIFY_API } from '../shopify-config';
+import { makeStorefrontRequest, STOREFRONT_QUERIES, getShopifyStorefrontUrl } from '../shopify-config';
 import { isDevelopment, mockShopifyBlogs, mockApiResponse, devLog } from '../utils/dev-helpers';
+
+// Helper function to detect shop from current context
+const detectShop = (): string => {
+  // Try to get from URL search params
+  const urlShop = new URLSearchParams(window.location.search).get('shop');
+  if (urlShop) {
+    return urlShop;
+  }
+  
+  // Try to get from hostname
+  const hostname = window.location.hostname;
+  if (hostname.includes('myshopify.com')) {
+    return hostname;
+  }
+  
+  // Try to get from pathname (Shopify admin)
+  const pathname = window.location.pathname;
+  const pathMatch = pathname.match(/\/admin\/apps\/[^\/]+\/([^\/]+)/);
+  if (pathMatch) {
+    return pathMatch[1];
+  }
+  
+  // Development fallback
+  if (isDevelopment) {
+    return 'localhost:5175';
+  }
+  
+  throw new Error('Could not detect shop from current context');
+};
 
 export interface ShopifyBlog {
   id: number;
@@ -53,7 +82,7 @@ export interface CreateArticleData {
   };
 }
 
-// Fetch all blogs from Shopify
+// Fetch all blogs from Shopify Storefront API
 export const fetchShopifyBlogs = async (): Promise<ShopifyBlog[]> => {
   if (isDevelopment) {
     devLog('Using mock Shopify blogs for development');
@@ -61,8 +90,27 @@ export const fetchShopifyBlogs = async (): Promise<ShopifyBlog[]> => {
   }
 
   try {
-    const response = await makeShopifyRequest(SHOPIFY_API.blogs);
-    return response.blogs;
+    // Detect shop from current context
+    const shop = detectShop();
+    
+    // Use Storefront API with tokenless access
+    const response = await makeStorefrontRequest(
+      shop,
+      STOREFRONT_QUERIES.blogs,
+      { first: 50 } // Get first 50 blogs
+    );
+    
+    // Transform GraphQL response to match your interface
+    const blogs = response.data?.blogs?.edges?.map((edge: any) => ({
+      id: edge.node.id.split('/').pop(), // Extract ID from GraphQL global ID
+      title: edge.node.title,
+      handle: edge.node.handle,
+      description: edge.node.description || '',
+      created_at: new Date().toISOString(), // Storefront API doesn't provide creation date
+      updated_at: new Date().toISOString()  // Storefront API doesn't provide update date
+    })) || [];
+    
+    return blogs;
   } catch (error) {
     console.error('Error fetching Shopify blogs:', error);
     // Fallback to mock data if API fails
@@ -70,13 +118,30 @@ export const fetchShopifyBlogs = async (): Promise<ShopifyBlog[]> => {
   }
 };
 
-// Fetch articles from a specific blog
-export const fetchShopifyArticles = async (blogId: number): Promise<ShopifyArticle[]> => {
+// Fetch blog articles
+export const fetchBlogArticles = async (blogHandle: string): Promise<ShopifyArticle[]> => {
   try {
-    const response = await makeShopifyRequest(`/admin/api/2023-10/blogs/${blogId}/articles.json`);
-    return response.articles;
+    const shop = detectShop();
+    
+    const response = await makeStorefrontRequest(
+      shop,
+      STOREFRONT_QUERIES.blogArticles,
+      { blogHandle, first: 50 }
+    );
+    
+    const articles = response.data?.blog?.articles?.edges?.map((edge: any) => ({
+      id: edge.node.id.split('/').pop(),
+      title: edge.node.title,
+      handle: edge.node.handle,
+      content: edge.node.content || '',
+      published_at: edge.node.publishedAt || new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })) || [];
+    
+    return articles;
   } catch (error) {
-    console.error('Error fetching Shopify articles:', error);
+    console.error('Error fetching blog articles:', error);
     throw error;
   }
 };

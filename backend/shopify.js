@@ -8,8 +8,7 @@ class ShopifyService {
   static generateAuthUrl(shop) {
     const state = crypto.randomBytes(16).toString('hex');
     
-    // For development, return a placeholder URL
-    const authUrl = `https://${shop}/admin/oauth/authorize?client_id=${process.env.SHOPIFY_API_KEY || '98d5cae75b3fdce1011668a7b6bdc8e2'}&scope=${process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_content,write_content'}&redirect_uri=${process.env.SHOPIFY_APP_URL || 'http://localhost:3001'}/auth/shopify/callback&state=${state}`;
+    const authUrl = `https://${shop}/admin/oauth/authorize?client_id=${process.env.SHOPIFY_API_KEY || '98d5cae75b3fdce1011668a7b6bdc8e2'}&scope=${process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_content,write_content'}&redirect_uri=${process.env.SHOPIFY_APP_URL || 'https://exquisite-nature-production.up.railway.app'}/auth/shopify/callback&state=${state}`;
     
     // Store state for verification
     sessions.set(state, { shop, timestamp: Date.now() });
@@ -17,7 +16,7 @@ class ShopifyService {
     return authUrl;
   }
 
-  // Handle OAuth callback
+  // Handle OAuth callback and exchange code for access token
   static async handleCallback(query) {
     try {
       const { shop, code, state } = query;
@@ -32,8 +31,25 @@ class ShopifyService {
         throw new Error('Shop mismatch');
       }
       
-      // For development, simulate successful OAuth
-      const accessToken = 'dev_access_token_' + Date.now();
+      // Exchange authorization code for access token
+      const tokenResponse = await fetch(`https://${shop}/admin/oauth/access_token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: process.env.SHOPIFY_API_KEY || '98d5cae75b3fdce1011668a7b6bdc8e2',
+          client_secret: process.env.SHOPIFY_API_SECRET,
+          code: code,
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error(`Token exchange failed: ${tokenResponse.status}`);
+      }
+
+      const tokenData = await tokenResponse.json();
+      const accessToken = tokenData.access_token;
       
       // Store access token
       sessions.set(shop, { 
@@ -52,10 +68,25 @@ class ShopifyService {
     }
   }
 
-  // Get shop products (mock data for development)
+  // Get shop products from real Shopify API
   static async getProducts(shop, accessToken) {
     try {
-      // Return mock products for development
+      const response = await fetch(`https://${shop}/admin/api/2024-10/products.json`, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Shopify API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.products || [];
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      // Fallback to mock data if API fails
       return [
         {
           id: 1,
@@ -70,16 +101,28 @@ class ShopifyService {
           status: "active"
         }
       ];
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      throw error;
     }
   }
 
-  // Get shop blogs (mock data for development)
+  // Get shop blogs from real Shopify API
   static async getBlogs(shop, accessToken) {
     try {
-      // Return mock blogs for development
+      const response = await fetch(`https://${shop}/admin/api/2024-10/blogs.json`, {
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Shopify API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.blogs || [];
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+      // Fallback to mock data if API fails
       return [
         {
           id: 1,
@@ -92,9 +135,6 @@ class ShopifyService {
           handle: "fashion"
         }
       ];
-    } catch (error) {
-      console.error('Error fetching blogs:', error);
-      throw error;
     }
   }
 
