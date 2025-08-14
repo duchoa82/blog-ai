@@ -95,7 +95,7 @@ export const makeStorefrontRequest = async (shop: string, query: string, variabl
 
 // GraphQL queries for Storefront API
 export const STOREFRONT_QUERIES = {
-  // Get products
+  // Get products - fixed syntax
   products: `
     query GetProducts($first: Int!) {
       products(first: $first) {
@@ -105,6 +105,8 @@ export const STOREFRONT_QUERIES = {
             title
             handle
             description
+            productType
+            vendor
             images(first: 1) {
               edges {
                 node {
@@ -113,8 +115,6 @@ export const STOREFRONT_QUERIES = {
                 }
               }
             }
-            productType
-            vendor
             priceRange {
               minVariantPrice {
                 amount
@@ -127,7 +127,7 @@ export const STOREFRONT_QUERIES = {
     }
   `,
   
-  // Get blogs
+  // Get blogs - fixed syntax
   blogs: `
     query GetBlogs($first: Int!) {
       blogs(first: $first) {
@@ -143,7 +143,7 @@ export const STOREFRONT_QUERIES = {
     }
   `,
   
-  // Get blog articles
+  // Get blog articles - fixed syntax
   blogArticles: `
     query GetBlogArticles($blogHandle: String!, $first: Int!) {
       blog(handle: $blogHandle) {

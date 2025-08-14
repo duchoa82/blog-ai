@@ -1,18 +1,39 @@
 import { makeStorefrontRequest, STOREFRONT_QUERIES } from '../shopify-config';
 
+// Simple test query to debug 400 errors
+const SIMPLE_TEST_QUERY = `
+  query {
+    shop {
+      name
+      description
+    }
+  }
+`;
+
 // Test API availability with a simple query
 export const testStorefrontAPI = async (shop: string) => {
   try {
     console.log('🧪 Testing Storefront API for shop:', shop);
     
-    // Test with a simple products query
+    // First test with a very simple query
+    console.log('🔍 Testing simple shop query...');
+    const simpleResponse = await makeStorefrontRequest(
+      shop,
+      SIMPLE_TEST_QUERY,
+      {}
+    );
+    
+    console.log('✅ Simple query response:', simpleResponse);
+    
+    // If simple query works, test products query
+    console.log('🔍 Testing products query...');
     const response = await makeStorefrontRequest(
       shop,
       STOREFRONT_QUERIES.products,
       { first: 5 } // Just get 5 products for testing
     );
     
-    console.log('✅ Storefront API Response:', response);
+    console.log('✅ Products query response:', response);
     
     if (response.data?.products?.edges) {
       console.log('🎉 API is working! Found products:', response.data.products.edges.length);

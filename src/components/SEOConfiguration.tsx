@@ -275,7 +275,7 @@ export const SEOConfiguration = ({
         "Fun Facts About Watches That Will Surprise You"
       ];
       setGeneratedTitles(fallbackTitles);
-      setShowTitleModal(true);
+    setShowTitleModal(true);
     } finally {
       setIsGeneratingTitle(false);
     }
@@ -633,13 +633,13 @@ Return only in the following Markdown structure:
                           <Text variant="bodyMd" as="p" style={{ marginBottom: "16px" }}>
                             No product selected
                           </Text>
-                          <Button 
-                            variant="secondary" 
-                            icon={PlusIcon}
+                    <Button 
+                      variant="secondary" 
+                      icon={PlusIcon}
                             onClick={() => setShowProductModal(true)}
-                          >
-                            Insert a product into the post
-                          </Button>
+                    >
+                      Insert a product into the post
+                    </Button>
                         </div>
                       )}
                     </Card>
@@ -710,7 +710,7 @@ Return only in the following Markdown structure:
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
                   <Text variant="bodyMd" as="span">Blog title</Text>
-                  <Button
+                  <Button 
                     variant="plain"
                     onClick={handleGenerateTitle}
                     disabled={keywordTags.length === 0}
@@ -728,10 +728,10 @@ Return only in the following Markdown structure:
                 }}>
                   <input
                     type="text"
-                    value={postTitle}
+                  value={postTitle}
                     onChange={(e) => setPostTitle(e.target.value)}
                     placeholder="Example: The Ultimate Guide to Sustainable Fashion"
-                    autoComplete="off"
+                  autoComplete="off"
                     style={{
                       border: 'none',
                       outline: 'none',
@@ -746,7 +746,7 @@ Return only in the following Markdown structure:
               </div>
             </BlockStack>
 
-                        {/* Action Buttons */}
+            {/* Action Buttons */}
             <BlockStack gap="200">
               {/* <Button 
                 variant="secondary"
@@ -778,8 +778,8 @@ Return only in the following Markdown structure:
               )}
               
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
-                  <Button 
-                    variant="primary" 
+              <Button 
+                variant="primary" 
                     icon={MagicIcon}
                     onClick={handleGenerateBlog}
                     loading={isGeneratingBlog}
@@ -787,7 +787,7 @@ Return only in the following Markdown structure:
                     disabled={keywordTags.length === 0 || !postTitle.trim() || isGeneratingBlog}
                   >
                     {isGeneratingBlog ? 'Generating...' : 'Generate'}
-                  </Button>
+              </Button>
                 </div>
             </BlockStack>
           </BlockStack>
@@ -817,7 +817,7 @@ Return only in the following Markdown structure:
           }
         ]}
       >
-                <Modal.Section>
+        <Modal.Section>
           {generatedTitles.length > 0 ? (() => {
             // Reorder titles to put recommended first
             const reorderedTitles = [...generatedTitles];
@@ -855,7 +855,7 @@ Return only in the following Markdown structure:
                               RECOMMENDED
                             </div>
                           )}
-                        </div>
+                    </div>
                       }
                       checked={tempSelectedTitle === title}
                       id={`title-${index}`}
