@@ -73,14 +73,14 @@ const App = () => {
               </Route>
               <Route path="auth-success" element={<AuthSuccess />} />
               <Route path="*" element={<NotFound />} />
-            </BrowserRouter>
-          ) : (
+            </Routes>
+          </BrowserRouter>
+        ) : (
           // Standalone app without App Bridge
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<AppLayout />}>
                 <Route index element={<Dashboard />} />
-                <Route path="products" element={<ProductSelection />} />
                 <Route path="blogs" element={<Blogs />} />
                 <Route path="generate" element={<BlogGeneration />} />
                 <Route path="pricing" element={<Pricing />} />
