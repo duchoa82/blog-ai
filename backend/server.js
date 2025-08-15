@@ -109,6 +109,14 @@ app.listen(PORT, () => {
           isEmbeddedApp: true,
           apiVersion: '2025-07',
         });
+        
+        // Test Shopify API init
+        console.log('🔍 Shopify API initialized successfully:', {
+          apiKey: process.env.SHOPIFY_API_KEY ? '✅ Set' : '❌ Missing',
+          apiSecret: process.env.SHOPIFY_API_SECRET ? '✅ Set' : '❌ Missing',
+          scopes: process.env.SCOPES || '❌ Missing',
+          hostName: hostName || '❌ Missing'
+        });
         console.log('✅ Shopify API initialized');
 
         // ===== Shopify OAuth Routes =====
