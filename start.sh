@@ -1,12 +1,14 @@
 #!/bin/bash
-set -e
-
-echo "🏗 Building frontend..."
+# Build frontend
 cd frontend
-bun install
-bun run build
+npm ci
+npm run build
+cd ..
 
-echo "🚀 Starting backend..."
-cd ../backend
-bun install --production
-bun run start
+# Install backend
+cd backend
+npm ci
+cd ..
+
+# Start backend server
+node backend/server.js
