@@ -6,9 +6,6 @@ import { createClient } from 'redis';
 import dotenv from 'dotenv';
 import { shopifyApi, Session } from '@shopify/shopify-api';
 
-// ===== Node adapter cho Shopify API =====
-import '@shopify/shopify-api/dist/esm/runtime/node.js';
-
 dotenv.config();
 const app = express();
 
@@ -43,16 +40,21 @@ async function initializeApp() {
     );
 
     // ===== Shopify API initialization =====
-    shopifyApi.initialize({
-      apiKey: process.env.SHOPIFY_API_KEY,
-      apiSecretKey: process.env.SHOPIFY_API_SECRET,
-      scopes: process.env.SHOPIFY_SCOPES.split(','),
-      hostName: process.env.SHOPIFY_APP_URL.replace(/^https?:\/\//, ''),
-      isEmbeddedApp: true,
-      apiVersion: '2025-07',
-      sessionStorage: new Session.MemorySessionStorage(), // dùng RedisStorage nếu muốn lâu dài
-    });
-    console.log('✅ Shopify API initialized');
+    try {
+      shopifyApi.initialize({
+        apiKey: process.env.SHOPIFY_API_KEY,
+        apiSecretKey: process.env.SHOPIFY_API_SECRET,
+        scopes: process.env.SHOPIFY_SCOPES.split(','),
+        hostName: process.env.SHOPIFY_APP_URL.replace(/^https?:\/\//, ''),
+        isEmbeddedApp: true,
+        apiVersion: '2025-07',
+        sessionStorage: new Session.MemorySessionStorage(),
+      });
+      console.log('✅ Shopify API initialized');
+    } catch (shopifyError) {
+      console.error('❌ Shopify API initialization failed:', shopifyError);
+      console.log('⚠️ Shopify OAuth routes disabled');
+    }
 
     // ===== Routes =====
     app.get('/', (req, res) => res.send('OK'));
