@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from '@shopify/polaris';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import enTranslations from '@shopify/polaris/locales/en.json';
+import { createApp } from '@shopify/app-bridge';
 import { Provider as AppBridgeProvider } from '@shopify/app-bridge-react';
 
 // Import components
@@ -68,6 +69,7 @@ const App = () => {
               host: shopDomain,
               forceRedirect: false
             }}
+            createApp={createApp}
           >
             <BrowserRouter>
               <Routes>
