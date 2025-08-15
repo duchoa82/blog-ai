@@ -16,6 +16,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ===== Redis Session Store (v7+) =====
+// FORCE RAILWAY DEPLOY - Redis configuration
 console.log('🔍 Redis Configuration:');
 console.log('📊 REDIS_URL:', process.env.REDIS_URL ? 'Present' : 'Missing');
 console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
