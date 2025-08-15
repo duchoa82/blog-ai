@@ -40,15 +40,15 @@ shopifyApi.initialize({
   hostName: process.env.HOST.replace(/^https?:\/\//, ''),
   isEmbeddedApp: true,
   apiVersion: '2025-07',
-  sessionStorage: new shopifyApi.Session.MemorySessionStorage(), // thay bằng RedisStorage nếu muốn lưu lâu dài
+  sessionStorage: new shopifyApi.Session.MemorySessionStorage(),
 });
 
 // ===== Routes =====
 
-// Healthcheck
+// Healthcheck & test session
 app.get('/', (req, res) => res.send('OK'));
+app.get('/healthz', (req, res) => res.status(200).send('OK'));
 
-// Test session
 app.get('/test-session', (req, res) => {
   req.session.views = (req.session.views || 0) + 1;
   res.send(`You visited this page ${req.session.views} times`);
