@@ -4,7 +4,8 @@ import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { createClient } from 'redis';
 import dotenv from 'dotenv';
-import { shopifyApi } from '@shopify/shopify-api';
+import '@shopify/shopify-api/adapters/node';
+import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
 import path from 'path';
 
 dotenv.config();
@@ -101,13 +102,14 @@ app.listen(PORT, () => {
     if (process.env.SHOPIFY_API_KEY && process.env.SHOPIFY_API_SECRET && process.env.SCOPES && (process.env.HOST || process.env.SHOPIFY_APP_URL)) {
       try {
         const hostName = (process.env.HOST || process.env.SHOPIFY_APP_URL).replace(/^https?:\/\//, '');
-        shopifyApi.initialize({
+        // Version 11.x uses different initialization
+        const shopify = shopifyApi({
           apiKey: process.env.SHOPIFY_API_KEY,
           apiSecretKey: process.env.SHOPIFY_API_SECRET,
           scopes: process.env.SCOPES.split(','),
           hostName: hostName,
           isEmbeddedApp: true,
-          apiVersion: '2025-07',
+          apiVersion: LATEST_API_VERSION,
         });
         
         // Test Shopify API init
@@ -123,7 +125,7 @@ app.listen(PORT, () => {
         app.get('/auth/shopify', async (req, res) => {
           const shop = req.query.shop;
           if (!shop) return res.status(400).send('Missing shop parameter');
-          const authRoute = await shopifyApi.auth.beginAuth(req, res, shop, '/auth/shopify/callback', true);
+          const authRoute = await shopify.auth.beginAuth(req, res, shop, '/auth/shopify/callback', true);
           return res.redirect(authRoute);
         });
 
@@ -147,7 +149,7 @@ app.listen(PORT, () => {
             <p><strong>HMAC:</strong> ${req.query.hmac ? '✅ Present' : '❌ Missing'}</p>
             <p><strong>Timestamp:</strong> ${req.query.timestamp || 'N/A'}</p>
             <hr>
-            <p><em>This is a test route. Check server logs for full debug info.</em></p>
+            <p><em>This is a test route. Check server logs for full debug info.</em></em></p>
           `);
         });
 
