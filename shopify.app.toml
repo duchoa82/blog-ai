@@ -1,0 +1,28 @@
+name = "Blog SEO AI"
+client_id = "98d5cae75b3fdce1011668a7b6bdc8e2"
+application_url = "https://blog-shopify-production.up.railway.app"
+embedded = true
+handle = "blog-seo-ai"
+
+[access_scopes]
+scopes = "read_products,read_content,read_blogs,read_articles"
+
+[access.admin]
+direct_api_mode = "online"
+
+[auth]
+redirect_urls = [
+  "https://exquisite-nature-production.up.railway.app/auth/shopify/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+[[webhooks.subscriptions]]
+topics = [ "app/uninstalled" ]
+compliance_topics = [ "customers/redact", "customers/data_request", "shop/redact" ]
+uri = "/webhooks"
+
+[build]
+automatically_update_urls_on_dev = false
+include_config_on_deploy = true

@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "bash start.sh"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
+
+[deploy.environment]
+NODE_ENV = "production"
+PORT = "3000"

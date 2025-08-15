@@ -3,31 +3,72 @@ import { isDevelopment, mockShopifyBlogs, mockApiResponse, devLog } from '../uti
 
 // Helper function to detect shop from current context
 const detectShop = (): string => {
-  // Try to get from URL search params
-  const urlShop = new URLSearchParams(window.location.search).get('shop');
-  if (urlShop) {
-    return urlShop;
+  try {
+    // Method 1: Try to get shop from App Bridge context (Shopify admin)
+    const host = new URLSearchParams(window.location.search).get('host');
+    if (host) {
+      try {
+        // Decode base64 host to get shop domain
+        const decodedHost = atob(host);
+        console.log('🔍 Decoded host from App Bridge:', decodedHost);
+        
+        // Extract shop from decoded host (format: admin.shopify.com/store/shopname)
+        const shopMatch = decodedHost.match(/store\/([^.]+)/);
+        if (shopMatch) {
+          const shopName = shopMatch[1];
+          console.log('✅ Shop detected from App Bridge:', shopName);
+          return `${shopName}.myshopify.com`;
+        }
+      } catch (decodeError) {
+        console.warn('⚠️ Failed to decode App Bridge host:', decodeError);
+      }
+    }
+    
+    // Method 2: Try to get from URL search params
+    const urlShop = new URLSearchParams(window.location.search).get('shop');
+    if (urlShop) {
+      console.log('✅ Shop detected from URL params:', urlShop);
+      return urlShop;
+    }
+    
+    // Method 3: Try to get from hostname
+    const hostname = window.location.hostname;
+    if (hostname.includes('myshopify.com')) {
+      console.log('✅ Shop detected from hostname:', hostname);
+      return hostname;
+    }
+    
+    // Method 4: Try to get from pathname (Shopify admin)
+    const pathname = window.location.pathname;
+    const pathMatch = pathname.match(/\/admin\/apps\/[^\/]+\/([^\/]+)/);
+    if (pathMatch) {
+      const shopName = pathMatch[1];
+      console.log('✅ Shop detected from pathname:', shopName);
+      return `${shopName}.myshopify.com`;
+    }
+    
+    // Method 5: Development fallback
+    if (isDevelopment) {
+      console.log('🔧 Using development fallback shop');
+      return 'demo-store.myshopify.com';
+    }
+    
+    // If all methods fail, throw error with context info
+    const contextInfo = {
+      host: new URLSearchParams(window.location.search).get('host'),
+      hostname: window.location.hostname,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      href: window.location.href
+    };
+    
+    console.error('❌ Shop detection failed. Context:', contextInfo);
+    throw new Error(`Could not detect shop from current context. Please check if you're in the correct Shopify admin environment. Context: ${JSON.stringify(contextInfo)}`);
+    
+  } catch (error) {
+    console.error('❌ Error in detectShop:', error);
+    throw error;
   }
-  
-  // Try to get from hostname
-  const hostname = window.location.hostname;
-  if (hostname.includes('myshopify.com')) {
-    return hostname;
-  }
-  
-  // Try to get from pathname (Shopify admin)
-  const pathname = window.location.pathname;
-  const pathMatch = pathname.match(/\/admin\/apps\/[^\/]+\/([^\/]+)/);
-  if (pathMatch) {
-    return pathMatch[1];
-  }
-  
-  // Development fallback
-  if (isDevelopment) {
-    return 'localhost:5175';
-  }
-  
-  throw new Error('Could not detect shop from current context');
 };
 
 export interface ShopifyBlog {

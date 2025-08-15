@@ -27,6 +27,8 @@ import {
 } from "@shopify/polaris-icons";
 import ApiService from "../services/api";
 import { fetchShopifyProducts } from "../services/shopify-product";
+import { fetchAdminProducts, AdminProduct } from "../services/shopify-admin";
+import { detectShop } from "../utils/shopify-utils";
 
 import { ShopifyProduct } from "../services/shopify-product";
 
@@ -144,15 +146,35 @@ export const SEOConfiguration = ({
     setKeywordTags(keywordTags.filter(tag => tag !== tagToRemove));
   };
 
-  // Fetch products from the store
+  // Fetch products from the store using Admin API
   const fetchStoreProducts = async () => {
     setIsLoadingProducts(true);
     try {
-      const products = await fetchShopifyProducts();
-      setStoreProducts(products);
+      console.log('🔄 Fetching products via Admin API...');
+      const products = await fetchAdminProducts();
+      
+      // Transform Admin API products to match our interface
+      const transformedProducts = products.map((product: AdminProduct) => ({
+        id: product.id,
+        title: product.title,
+        handle: product.handle,
+        description: product.body_html || product.description || 'No description available',
+        product_type: product.product_type || 'General',
+        vendor: product.vendor || 'Unknown Vendor',
+        product_url: `https://${detectShop()}/products/${product.handle}`,
+        images: product.images?.map((img: any) => ({
+          src: img.src,
+          alt: img.alt || product.title
+        })) || [],
+        status: product.status || 'active'
+      }));
+      
+      setStoreProducts(transformedProducts as any);
+      console.log(`✅ Successfully loaded ${transformedProducts.length} products via Admin API`);
+      
     } catch (error) {
-      console.error('Error fetching store products:', error);
-      // Fallback to mock data if API fails
+      console.error('❌ Error fetching store products via Admin API:', error);
+      // Don't fall back to mock data - show error instead
       setStoreProducts([]);
     } finally {
       setIsLoadingProducts(false);
@@ -630,15 +652,12 @@ Return only in the following Markdown structure:
                           textAlign: "center",
                           backgroundColor: "#f6f6f7"
                         }}>
-                          <Text variant="bodyMd" as="p" style={{ marginBottom: "16px" }}>
-                            No product selected
-                          </Text>
                     <Button 
                       variant="secondary" 
                       icon={PlusIcon}
                             onClick={() => setShowProductModal(true)}
                     >
-                      Insert a product into the post
+                            add a product link into blog
                     </Button>
                         </div>
                       )}
@@ -909,13 +928,14 @@ Return only in the following Markdown structure:
               onChange={setProductSearchQuery}
               placeholder="Type to search products..."
               prefix={<SearchIcon />}
+              autoComplete="off"
             />
             
             {/* Product List */}
             {isLoadingProducts ? (
               <div style={{ textAlign: 'center', padding: '20px' }}>
                 <Spinner size="large" />
-                <Text variant="bodyMd" as="p" style={{ marginTop: '12px' }}>
+                <Text variant="bodyMd" as="p">
                   Loading products from your store...
                 </Text>
               </div>
@@ -954,10 +974,18 @@ Return only in the following Markdown structure:
                         {product.title}
                       </Text>
                       <Text variant="bodyMd" as="p" tone="subdued">
-                        {product.product_type} • {product.vendor}
+                        {product.product_type || 'General'} • {product.vendor || 'Unknown Vendor'}
                       </Text>
+                      {product.description && (
+                        <Text variant="bodySm" as="p" tone="subdued">
+                          {product.description.length > 100 
+                            ? `${product.description.substring(0, 100)}...` 
+                            : product.description
+                          }
+                        </Text>
+                      )}
                       <Text variant="bodySm" as="p" tone="subdued">
-                        Product URL: {product.handle}
+                        Product URL: {product.product_url || `https://your-store.myshopify.com/products/${product.handle}`}
                       </Text>
                     </div>
                     {localSelectedProduct?.id === product.id && (

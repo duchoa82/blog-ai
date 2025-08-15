@@ -1,108 +1,55 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const { ShopifyService } = require('./shopify');
-require('dotenv').config();
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { ShopifyService } from './shopify.js';
+import dotenv from 'dotenv';
+import session from 'express-session';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      frameAncestors: ["'self'", "https://*.myshopify.com", "https://*.shopify.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://*.myshopify.com", "https://*.shopify.com"]
+// Session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: true, // Changed to true for better session persistence
+  saveUninitialized: true, // Changed to true to ensure session is created
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax', // Changed from 'none' to 'lax' for better compatibility
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true // Added for security
+  },
+  name: 'shopify-app-session' // Added custom session name
+}));
+
+// Basic middleware
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// Session debugging middleware (for development/production debugging)
+app.use((req, res, next) => {
+  if (req.path.includes('/auth/')) {
+    console.log(`🔍 Auth request: ${req.method} ${req.path}`);
+    console.log(`📱 Session ID: ${req.sessionID}`);
+    console.log(`🔑 Session exists: ${!!req.session}`);
+    if (req.session) {
+      console.log(`📊 Session keys: ${Object.keys(req.session)}`);
     }
   }
-}));
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'https://blog-shopify-production.up.railway.app',
-    /https:\/\/.*\.myshopify\.com$/,
-    /https:\/\/.*\.shopify\.com$/
-  ],
-  credentials: true
-}));
-app.use(morgan('combined'));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-
-// Shopify app embedding headers
-app.use((req, res, next) => {
-  // Remove conflicting X-Frame-Options header
-  // Let CSP handle iframe permissions
-  res.setHeader('Content-Security-Policy', "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com");
-  
-  // Add CORS headers for preflight requests
-  res.header('Access-Control-Allow-Origin', 'https://blog-shopify-production.up.railway.app');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
   next();
 });
 
-// Handle preflight requests for specific routes
-app.options('/api/generate-blog', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'https://blog-shopify-production.up.railway.app');
-  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.sendStatus(200);
-});
+// Healthcheck endpoint
+app.get('/healthz', (_req, res) => res.send('OK'));
 
-app.options('/api/shopify/products', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'https://blog-shopify-production.up.railway.app');
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.sendStatus(200);
-});
-
-app.options('/api/shopify/blogs', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'https://blog-shopify-production.up.railway.app');
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.sendStatus(200);
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Root endpoint
-app.get('/', (req, res) => {
-  // Check if this is a Shopify OAuth request
-  if (req.query.shop && req.query.hmac) {
-    // This is a Shopify OAuth request, redirect to OAuth handler
-    return res.redirect(`/auth/shopify?${new URLSearchParams(req.query).toString()}`);
-  }
-  
-  // Regular API info request
-  res.json({
-    message: '🚀 Blog SEO AI Backend API',
-    version: '1.0.0',
-    status: 'Running',
-    endpoints: {
-      health: '/health',
-      shopify: {
-        auth: '/auth/shopify',
-        callback: '/auth/shopify/callback',
-        products: '/api/shopify/products',
-        blogs: '/api/shopify/blogs',
-        articles: '/api/shopify/articles'
-      },
-      ai: {
-        generateBlog: '/api/generate-blog'
-      }
-    },
-    timestamp: new Date().toISOString()
-  });
+// API endpoints (simplified for now)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
 // Shopify OAuth endpoints
@@ -114,9 +61,7 @@ app.get('/auth/shopify', (req, res) => {
       return res.status(400).json({ error: 'Shop parameter is required' });
     }
     
-    const authUrl = ShopifyService.generateAuthUrl(shop);
-    
-    // Automatically redirect to the authorization URL
+    const authUrl = ShopifyService.generateAuthUrl(shop, req);
     res.redirect(authUrl);
     
   } catch (error) {
@@ -128,20 +73,41 @@ app.get('/auth/shopify', (req, res) => {
 // OAuth callback endpoint
 app.get('/auth/shopify/callback', async (req, res) => {
   try {
-    const result = await ShopifyService.handleCallback(req.query);
+    console.log(`🔄 OAuth callback initiated`);
+    console.log(`📱 Session ID: ${req.sessionID}`);
+    console.log(`🔑 Session exists: ${!!req.session}`);
+    
+    const result = await ShopifyService.handleCallback(req.query, req);
     
     if (result.success) {
       // OAuth successful - redirect to frontend with success
       const redirectUrl = `${process.env.FRONTEND_URL || 'https://blog-shopify-production.up.railway.app'}/auth-success?shop=${result.shop}`;
+      console.log(`✅ OAuth successful, redirecting to: ${redirectUrl}`);
       res.redirect(redirectUrl);
     } else {
       // OAuth failed
+      console.error(`❌ OAuth failed:`, result);
       res.status(400).json({ error: 'OAuth failed', details: result });
     }
     
   } catch (error) {
-    console.error('OAuth callback error:', error);
-    res.status(500).json({ error: 'OAuth callback failed', details: error.message });
+    console.error('❌ OAuth callback error:', error);
+    console.error('📊 Error details:', {
+      message: error.message,
+      stack: error.stack,
+      sessionExists: !!req.session,
+      sessionKeys: req.session ? Object.keys(req.session) : 'No session'
+    });
+    
+    // Send more detailed error response
+    res.status(500).json({ 
+      error: 'OAuth callback failed', 
+      details: error.message,
+      sessionInfo: {
+        exists: !!req.session,
+        keys: req.session ? Object.keys(req.session) : []
+      }
+    });
   }
 });
 
@@ -155,16 +121,24 @@ app.get('/api/shopify/session', async (req, res) => {
     }
     
     // Get access token from session storage
-    const session = sessions.get(shop);
-    if (!session || !session.accessToken) {
+    const sessionData = req.session.shopData;
+    if (!sessionData || !sessionData.accessToken || sessionData.shop !== shop) {
       return res.status(404).json({ error: 'No active session found for this shop' });
+    }
+    
+    // Validate the access token before returning it
+    const isValid = await ShopifyService.validateAccessToken(shop, sessionData.accessToken);
+    if (!isValid) {
+      console.log(`❌ Invalid access token for shop: ${shop}, removing session`);
+      delete req.session.shopData;
+      return res.status(401).json({ error: 'Access token is invalid or expired' });
     }
     
     res.json({ 
       success: true, 
       shop, 
-      accessToken: session.accessToken,
-      timestamp: session.timestamp
+      accessToken: sessionData.accessToken,
+      timestamp: sessionData.timestamp
     });
     
   } catch (error) {
@@ -179,102 +153,34 @@ app.get('/api/shopify/products', async (req, res) => {
     const { shop, accessToken } = req.query;
     
     if (!shop || !accessToken) {
-      return res.status(400).json({ error: 'Shop and accessToken are required' });
+      return res.status(400).json({ 
+        error: 'Shop and accessToken are required',
+        received: { shop: !!shop, accessToken: !!accessToken }
+      });
     }
+    
+    console.log(`🛍️ Products request for shop: ${shop}`);
+    console.log(`🔑 Access token present: ${!!accessToken}`);
     
     const products = await ShopifyService.getProducts(shop, accessToken);
     res.json({ success: true, products });
     
   } catch (error) {
     console.error('Products fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch products' });
-  }
-});
-
-app.get('/api/shopify/blogs', async (req, res) => {
-  try {
-    const { shop, accessToken } = req.query;
-    
-    if (!shop || !accessToken) {
-      return res.status(400).json({ error: 'Shop and accessToken are required' });
-    }
-    
-    const blogs = await ShopifyService.getBlogs(shop, accessToken);
-    res.json({ success: true, blogs });
-    
-  } catch (error) {
-    console.error('Blogs fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch blogs' });
-  }
-});
-
-app.post('/api/shopify/articles', async (req, res) => {
-  try {
-    const { shop, accessToken, blogId, articleData } = req.body;
-    
-    if (!shop || !accessToken || !blogId || !articleData) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    
-    const article = await ShopifyService.createArticle(shop, accessToken, blogId, articleData);
-    res.json({ success: true, article });
-    
-  } catch (error) {
-    console.error('Article creation error:', error);
-    res.status(500).json({ error: 'Failed to create article' });
-  }
-});
-
-// Blog generation endpoint
-app.post('/api/generate-blog', async (req, res) => {
-  try {
-    const { prompt, apiKey } = req.body;
-    
-    if (!prompt || !apiKey) {
-      return res.status(400).json({ 
-        error: 'Missing required fields: prompt and apiKey' 
-      });
-    }
-
-    // Call Google Gemini API
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const generatedContent = data.candidates[0].content.parts[0].text;
-
-    res.json({ 
-      success: true, 
-      content: generatedContent 
-    });
-
-  } catch (error) {
-    console.error('Blog generation error:', error);
     res.status(500).json({ 
-      error: 'Failed to generate blog content',
-      details: error.message 
+      error: 'Failed to fetch products',
+      details: error.message,
+      shop: req.query.shop
     });
   }
 });
 
-// Start server
+// Catch-all route to serve frontend (must be AFTER API routes)
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Backend server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 Shopify OAuth: http://localhost:${PORT}/auth/shopify`);
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/healthz`);
 });

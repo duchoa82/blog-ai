@@ -63,9 +63,9 @@ export const testStorefrontAPI = async (shop: string) => {
 // Test with multiple shop formats
 export const testMultipleShopFormats = async () => {
   const testShops = [
-    'your-store-name.myshopify.com',
     'demo-store.myshopify.com',
-    'test-shop.myshopify.com'
+    'test-shop.myshopify.com',
+    'shopify.myshopify.com'  // Shopify's own store
   ];
   
   console.log('🧪 Testing multiple shop formats...');

@@ -1,52 +1,26 @@
 import { makeStorefrontRequest, STOREFRONT_QUERIES, getShopifyStorefrontUrl } from '../shopify-config';
 import { isDevelopment, mockShopifyProducts, mockApiResponse, devLog } from '../utils/dev-helpers';
-
-// Helper function to detect shop from current context
-const detectShop = (): string => {
-  // Try to get from URL search params
-  const urlShop = new URLSearchParams(window.location.search).get('shop');
-  if (urlShop) {
-    return urlShop;
-  }
-  
-  // Try to get from hostname
-  const hostname = window.location.hostname;
-  if (hostname.includes('myshopify.com')) {
-    return hostname;
-  }
-  
-  // Try to get from pathname (Shopify admin)
-  const pathname = window.location.pathname;
-  const pathMatch = pathname.match(/\/admin\/apps\/[^\/]+\/([^\/]+)/);
-  if (pathMatch) {
-    return pathMatch[1];
-  }
-  
-  // Development fallback
-  if (isDevelopment) {
-    return 'localhost:5175';
-  }
-  
-  throw new Error('Could not detect shop from current context');
-};
+import { detectShop } from '../utils/shopify-utils';
 
 export interface ShopifyProduct {
   id: number;
   title: string;
   handle: string;
-  body_html: string;
+  body_html?: string;
+  description?: string; // Add description field
   vendor: string;
   product_type: string;
-  created_at: string;
-  updated_at: string;
-  published_at: string;
-  template_suffix: string;
-  tags: string;
+  created_at?: string;
+  updated_at?: string;
+  published_at?: string;
+  template_suffix?: string;
+  tags?: string;
   status: string;
-  admin_graphql_api_id: string;
-  variants: ShopifyProductVariant[];
+  admin_graphql_api_id?: string;
+  product_url?: string; // Add product_url field
+  variants?: ShopifyProductVariant[];
   images: ShopifyProductImage[];
-  options: ShopifyProductOption[];
+  options?: ShopifyProductOption[];
 }
 
 export interface ShopifyProductVariant {
@@ -109,6 +83,7 @@ export const fetchShopifyProducts = async (): Promise<ShopifyProduct[]> => {
   try {
     // Detect shop from current context
     const shop = detectShop();
+    console.log('🛍️ Fetching products for shop:', shop);
     
     // Use Storefront API with tokenless access
     const response = await makeStorefrontRequest(
@@ -117,25 +92,51 @@ export const fetchShopifyProducts = async (): Promise<ShopifyProduct[]> => {
       { first: 50 } // Get first 50 products
     );
     
-    // Transform GraphQL response to match your interface
-    const products = response.data?.products?.edges?.map((edge: any) => ({
-      id: edge.node.id.split('/').pop(), // Extract ID from GraphQL global ID
-      title: edge.node.title,
-      handle: edge.node.handle,
-      description: edge.node.description,
-      product_type: edge.node.productType,
-      vendor: edge.node.vendor,
-      images: edge.node.images?.edges?.map((imgEdge: any) => ({
-        src: imgEdge.node.url,
-        alt: imgEdge.node.altText
-      })) || [],
-      status: 'active' // Storefront API doesn't provide status, assume active
-    })) || [];
+    console.log('📦 Storefront API response:', response);
     
+    // Transform GraphQL response to match your interface
+    const products = response.data?.products?.edges?.map((edge: any) => {
+      const product = edge.node;
+      
+      // Construct full product URL
+      const productUrl = `https://${shop}/products/${product.handle}`;
+      
+      return {
+        id: product.id.split('/').pop(), // Extract ID from GraphQL global ID
+        title: product.title,
+        handle: product.handle,
+        description: product.description || 'No description available',
+        product_type: product.productType || 'General',
+        vendor: product.vendor || 'Unknown Vendor',
+        product_url: productUrl, // Full product URL
+        images: product.images?.edges?.map((imgEdge: any) => ({
+          src: imgEdge.node.url,
+          alt: imgEdge.node.altText || product.title
+        })) || [],
+        status: 'active' // Storefront API doesn't provide status, assume active
+      };
+    }) || [];
+    
+    console.log(`✅ Successfully fetched ${products.length} products from ${shop}`);
     return products;
   } catch (error) {
-    console.error('Error fetching Shopify products:', error);
+    console.error('❌ Error fetching Shopify products:', error);
+    
+    // Enhanced error logging
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        context: {
+          host: new URLSearchParams(window.location.search).get('host'),
+          hostname: window.location.hostname,
+          pathname: window.location.pathname
+        }
+      });
+    }
+    
     // Fallback to mock data if API fails
+    console.warn('⚠️ Falling back to mock data due to API failure');
     return mockApiResponse(mockShopifyProducts);
   }
 };

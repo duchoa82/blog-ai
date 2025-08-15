@@ -47,15 +47,21 @@ export const shopifyApp = (() => {
   }
 })();
 
-// Storefront API endpoints (tokenless access)
+// Storefront API endpoints (tokenless access) - with fallback versions
 export const STOREFRONT_API = {
-  // Products
-  products: '/api/2025-07/graphql.json',
-  // Blogs and Articles
-  blogs: '/api/2025-07/graphql.json',
-  // Collections
-  collections: '/api/2025-07/graphql.json',
+  // Primary version (most stable)
+  products: '/api/2024-10/graphql.json',
+  blogs: '/api/2024-10/graphql.json',
+  collections: '/api/2024-10/graphql.json',
 };
+
+// Fallback API versions to try if primary fails
+export const STOREFRONT_API_FALLBACKS = [
+  '/api/2024-10/graphql.json',  // Most stable and widely supported
+  '/api/2025-01/graphql.json',  // Stable
+  '/api/2025-04/graphql.json',  // Stable
+  // Removed 2025-07 as it's too new and causing compatibility issues
+];
 
 // Helper function to get Shopify Storefront API URL
 export const getShopifyStorefrontUrl = (shop: string) => {
@@ -71,26 +77,46 @@ export const getShopifyStorefrontUrl = (shop: string) => {
   return `https://${shop}`;
 };
 
-// Helper function to make tokenless Storefront API requests
+// Helper function to make tokenless Storefront API requests with fallback versions
 export const makeStorefrontRequest = async (shop: string, query: string, variables: any = {}) => {
-  const url = `${getShopifyStorefrontUrl(shop)}${STOREFRONT_API.products}`;
+  let lastError: Error | null = null;
   
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      query,
-      variables,
-    }),
-  });
+  // Try each API version until one works
+  for (const apiEndpoint of STOREFRONT_API_FALLBACKS) {
+    try {
+      const url = `${getShopifyStorefrontUrl(shop)}${apiEndpoint}`;
+      console.log(`🔍 Trying API endpoint: ${apiEndpoint}`);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query,
+          variables,
+        }),
+      });
 
-  if (!response.ok) {
-    throw new Error(`Storefront API error: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`Storefront API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ API endpoint ${apiEndpoint} worked successfully`);
+      return result;
+      
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      console.warn(`⚠️ API endpoint ${apiEndpoint} failed:`, lastError.message);
+      
+      // Continue to next endpoint
+      continue;
+    }
   }
-
-  return response.json();
+  
+  // If all endpoints failed, throw the last error
+  throw lastError || new Error('All Storefront API endpoints failed');
 };
 
 // GraphQL queries for Storefront API
