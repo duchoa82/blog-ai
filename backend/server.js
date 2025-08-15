@@ -5,6 +5,7 @@ import connectRedis from 'connect-redis';
 import { createClient } from 'redis';
 import dotenv from 'dotenv';
 import { shopifyApi } from '@shopify/shopify-api';
+import { MemorySessionStorage } from '@shopify/shopify-api/dist/auth/session/index.js';
 import path from 'path';
 
 dotenv.config();
@@ -108,7 +109,7 @@ app.listen(PORT, () => {
           hostName: hostName,
           isEmbeddedApp: true,
           apiVersion: '2025-07',
-          sessionStorage: new shopifyApi.Session.MemorySessionStorage(),
+          sessionStorage: new MemorySessionStorage(),
         });
         console.log('✅ Shopify API initialized');
 
