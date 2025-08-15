@@ -3,10 +3,10 @@ set -e
 
 echo "🏗 Building frontend..."
 cd frontend
-npm install
-npm run build
+bun install
+bun run build
 
 echo "🚀 Starting backend..."
 cd ../backend
-npm install --omit=dev
-node server.js
+bun install --production
+bun run start
