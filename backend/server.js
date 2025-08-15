@@ -4,27 +4,22 @@ import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { createClient } from 'redis';
 import dotenv from 'dotenv';
-import { shopifyApi, MemorySessionStorage } from '@shopify/shopify-api';
+import { shopifyApi } from '@shopify/shopify-api';
 
 dotenv.config();
 const app = express();
 
 async function initializeApp() {
   try {
-    // ===== Redis setup =====
+    // Redis setup
     const RedisStore = connectRedis(session);
     const redisClient = createClient({
       url: process.env.REDIS_URL,
-      socket: {
-        tls: process.env.REDIS_TLS === 'true',
-        rejectUnauthorized: false,
-      },
+      socket: { tls: process.env.REDIS_TLS === 'true', rejectUnauthorized: false },
     });
-    redisClient.on('error', (err) => console.error('Redis Client Error', err));
+    redisClient.on('error', console.error);
     await redisClient.connect();
-    console.log('✅ Redis connected successfully');
 
-    // ===== Session middleware =====
     app.use(
       session({
         store: new RedisStore({ client: redisClient }),
@@ -35,7 +30,7 @@ async function initializeApp() {
       })
     );
 
-    // ===== Shopify API initialization =====
+    // Shopify API (bỏ sessionStorage)
     shopifyApi.initialize({
       apiKey: process.env.SHOPIFY_API_KEY,
       apiSecretKey: process.env.SHOPIFY_API_SECRET,
@@ -43,54 +38,33 @@ async function initializeApp() {
       hostName: process.env.SHOPIFY_APP_URL.replace(/^https?:\/\//, ''),
       isEmbeddedApp: true,
       apiVersion: '2025-07',
-      sessionStorage: new MemorySessionStorage(),
     });
-    console.log('✅ Shopify API initialized');
 
-    // ===== Routes =====
+    // Routes
     app.get('/', (req, res) => res.send('OK'));
-    app.get('/healthz', (req, res) => res.status(200).send('OK'));
-
-    app.get('/test-session', (req, res) => {
-      req.session.views = (req.session.views || 0) + 1;
-      res.send(`You visited this page ${req.session.views} times`);
-    });
-
-    // ===== Shopify OAuth routes =====
+    app.get('/healthz', (req, res) => res.send('OK'));
     app.get('/auth/shopify', async (req, res) => {
       const shop = req.query.shop;
       if (!shop) return res.status(400).send('Missing shop parameter');
-      const authRoute = await shopifyApi.auth.beginAuth(
-        req,
-        res,
-        shop,
-        '/auth/shopify/callback',
-        true
-      );
-      return res.redirect(authRoute);
+      const authRoute = await shopifyApi.auth.beginAuth(req, res, shop, '/auth/shopify/callback', true);
+      res.redirect(authRoute);
     });
-
     app.get('/auth/shopify/callback', async (req, res) => {
       try {
         const session = await shopifyApi.auth.validateAuthCallback(req, res);
         res.send('Shopify auth successful!');
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
         res.status(500).send('Auth failed');
       }
     });
 
-    // ===== Start server =====
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-      console.log(`🔍 Healthcheck: http://localhost:${PORT}/healthz`);
-    });
-  } catch (error) {
-    console.error('❌ App initialization failed:', error);
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  } catch (err) {
+    console.error(err);
     process.exit(1);
   }
 }
 
-// Start app
 initializeApp();
