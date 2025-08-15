@@ -3,10 +3,16 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import session from 'express-session';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ===== Middleware =====
 app.use(cors({
@@ -14,6 +20,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// ===== Serve static frontend files =====
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // ===== Session setup =====
 app.use(session({
@@ -119,13 +128,9 @@ app.get('/', (req, res) => {
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
   } else {
-    // Direct access - show API info
-    res.json({
-      message: 'Blog AI Backend API',
-      status: 'running',
-      timestamp: new Date().toISOString(),
-      note: 'Access with Shopify app parameters to see app interface'
-    });
+    // Direct access - serve frontend HTML
+    console.log('🔄 Serving frontend for direct access');
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   }
 });
 
@@ -236,4 +241,5 @@ app.listen(PORT, () => {
   console.log(`🔑 Test endpoint: http://localhost:${PORT}/test`);
   console.log(`🔐 OAuth: http://localhost:${PORT}/auth/shopify?shop=your-shop.myshopify.com`);
   console.log(`📊 Session debug: http://localhost:${PORT}/session`);
+  console.log(`🌐 Frontend: http://localhost:${PORT}/ (serving dist/ folder)`);
 });
