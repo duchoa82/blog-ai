@@ -16,12 +16,25 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ====== Redis Session Store ======
+console.log('🔍 Redis Configuration:');
+console.log('📊 REDIS_URL:', process.env.REDIS_URL ? 'Present' : 'Missing');
+console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
+
 const RedisStore = RedisStorePkg(session);
 const redisClient = createClient({
   url: process.env.REDIS_URL,
   legacyMode: true // cho connect-redis v6 trở xuống
 });
-redisClient.connect().catch(console.error);
+
+// Test Redis connection
+redisClient.connect()
+  .then(() => {
+    console.log('✅ Redis connection established successfully');
+  })
+  .catch((err) => {
+    console.error('❌ Redis connection failed:', err);
+    console.error('🔍 Falling back to MemoryStore');
+  });
 
 // ====== Redis Session Store ======
 app.use(session({
