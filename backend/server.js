@@ -5,6 +5,7 @@ import connectRedis from 'connect-redis';
 import { createClient } from 'redis';
 import dotenv from 'dotenv';
 import { shopifyApi } from '@shopify/shopify-api';
+import path from 'path';
 
 dotenv.config();
 const app = express();
@@ -145,6 +146,14 @@ app.listen(PORT, () => {
         });
 
         console.log('🔑 Shopify OAuth routes enabled');
+
+        // ===== Serve Frontend Static Files =====
+        app.use(express.static(path.join(process.cwd(), 'frontend', 'dist')));
+        
+        // Catch-all route for SPA
+        app.get('*', (req, res) => {
+          res.sendFile(path.join(process.cwd(), 'frontend', 'dist', 'index.html'));
+        });
 
       } catch (shopifyError) {
         console.error('❌ Shopify API initialization failed:', shopifyError);
