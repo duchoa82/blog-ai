@@ -4,8 +4,8 @@ import { fileURLToPath } from 'url';
 import { ShopifyService } from './shopify.js';
 import dotenv from 'dotenv';
 import session from 'express-session';
-import Redis from 'ioredis';
-import connectRedis from 'connect-redis';
+import * as connectRedis from 'connect-redis';
+import { createClient } from 'redis';
 
 dotenv.config();
 
@@ -15,18 +15,24 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ===== Redis Session Store (v7+) =====
-// FORCE RAILWAY DEPLOY - Redis configuration
+// ===== Redis Session Store (ESM compatible) =====
 console.log('🔍 Redis Configuration:');
 console.log('📊 REDIS_URL:', process.env.REDIS_URL ? 'Present' : 'Missing');
 console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
 console.log('🔒 REDIS_TLS:', process.env.REDIS_TLS);
 
-const redisClient = new Redis(process.env.REDIS_URL, {
-  tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
-  retryDelayOnFailover: 100,
-  maxRetriesPerRequest: 3
+const RedisStore = connectRedis.default(session);
+
+// Tạo client Redis
+const redisClient = createClient({
+  url: process.env.REDIS_URL,
+  socket: {
+    tls: process.env.REDIS_TLS === 'true',
+    rejectUnauthorized: false
+  }
 });
+
+redisClient.connect().catch(console.error);
 
 redisClient.on('connect', () => {
   console.log('✅ Redis connection established successfully');
@@ -34,34 +40,31 @@ redisClient.on('connect', () => {
 
 redisClient.on('error', (err) => {
   console.error('❌ Redis connection failed:', err);
-  process.exit(1); // Dừng server nếu Redis không kết nối
+  console.error('🔍 Falling back to MemoryStore');
 });
 
-const RedisStore = connectRedis({
-  client: redisClient,
-  prefix: 'sess:', // để phân biệt session key trong Redis
-  ttl: 24 * 60 * 60, // 1 ngày
-});
-
-app.use(session({
-  store: RedisStore,
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production', // true khi deploy HTTPS
-    sameSite: 'none',
-    maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true
-  },
-  name: 'shopify-app-session'
-}));
+// Middleware session với Redis store
+app.use(
+  session({
+    store: new RedisStore({ client: redisClient }),
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24h
+      httpOnly: true
+    },
+    name: 'shopify-app-session'
+  })
+);
 
 // Basic middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
-// Session debugging middleware (for development/production debugging)
+// Session debugging middleware
 app.use((req, res, next) => {
   if (req.path.includes('/auth/')) {
     console.log(`🔍 Auth request: ${req.method} ${req.path}`);
@@ -93,7 +96,7 @@ app.get('/debug/session', (req, res) => {
   });
 });
 
-// API endpoints (simplified for now)
+// API endpoints
 app.get('/api/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
