@@ -97,13 +97,14 @@ app.listen(PORT, () => {
     }
 
     // ===== Shopify context =====
-    if (process.env.SHOPIFY_API_KEY && process.env.SHOPIFY_API_SECRET && process.env.SCOPES && process.env.HOST) {
+    if (process.env.SHOPIFY_API_KEY && process.env.SHOPIFY_API_SECRET && process.env.SCOPES && (process.env.HOST || process.env.SHOPIFY_APP_URL)) {
       try {
+        const hostName = (process.env.HOST || process.env.SHOPIFY_APP_URL).replace(/^https?:\/\//, '');
         shopifyApi.initialize({
           apiKey: process.env.SHOPIFY_API_KEY,
           apiSecretKey: process.env.SHOPIFY_API_SECRET,
           scopes: process.env.SCOPES.split(','),
-          hostName: process.env.HOST.replace(/^https?:\/\//, ''),
+          hostName: hostName,
           isEmbeddedApp: true,
           apiVersion: '2025-07',
           sessionStorage: new shopifyApi.Session.MemorySessionStorage(),
@@ -121,11 +122,26 @@ app.listen(PORT, () => {
         app.get('/auth/shopify/callback', async (req, res) => {
           try {
             const session = await shopifyApi.auth.validateAuthCallback(req, res);
-            res.send('Shopify auth successful!');
+            console.log('✅ Shopify session:', session);
+            // Redirect to frontend after successful auth
+            const frontendUrl = process.env.FRONTEND_URL || 'https://blog-shopify-production.up.railway.app';
+            res.redirect(frontendUrl);
           } catch (error) {
-            console.error(error);
+            console.error('❌ Auth failed:', error);
             res.status(500).send('Auth failed');
           }
+        });
+
+        // ===== Handle Shopify redirect to root with OAuth params =====
+        app.get('/', (req, res) => {
+          // Check if this is Shopify OAuth redirect
+          if (req.query.shop && req.query.hmac && req.query.timestamp) {
+            console.log('🔄 Shopify OAuth redirect detected, redirecting to callback');
+            const callbackUrl = `/auth/shopify/callback?${new URLSearchParams(req.query).toString()}`;
+            return res.redirect(callbackUrl);
+          }
+          // Normal healthcheck
+          res.send('OK');
         });
 
         console.log('🔑 Shopify OAuth routes enabled');
