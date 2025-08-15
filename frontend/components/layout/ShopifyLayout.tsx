@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { NavMenu } from '@shopify/app-bridge-react';
 import { useAppBridge } from '@shopify/app-bridge-react';
+import { useEffect, useState } from 'react';
 import "./ShopifyLayout.css";
 
 const ShopifyLayout = () => {

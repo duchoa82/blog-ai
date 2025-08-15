@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { ShopifyService } from './shopify.js';
 import dotenv from 'dotenv';
 import session from 'express-session';
+import MemoryStore from 'memorystore';
 
 dotenv.config();
 
@@ -13,18 +14,22 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Session middleware
+// Session middleware with MemoryStore for better production handling
 app.use(session({
+  store: new (MemoryStore(session))({
+    checkPeriod: 86400000, // prune expired entries every 24h
+    ttl: 24 * 60 * 60 * 1000 // 24 hours
+  }),
   secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: true, // Changed to true for better session persistence
-  saveUninitialized: true, // Changed to true to ensure session is created
+  resave: true,
+  saveUninitialized: true,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax', // Changed from 'none' to 'lax' for better compatibility
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    httpOnly: true // Added for security
+    httpOnly: true
   },
-  name: 'shopify-app-session' // Added custom session name
+  name: 'shopify-app-session'
 }));
 
 // Basic middleware
@@ -37,8 +42,12 @@ app.use((req, res, next) => {
     console.log(`🔍 Auth request: ${req.method} ${req.path}`);
     console.log(`📱 Session ID: ${req.sessionID}`);
     console.log(`🔑 Session exists: ${!!req.session}`);
+    console.log(`🍪 Cookies: ${req.headers.cookie || 'No cookies'}`);
     if (req.session) {
       console.log(`📊 Session keys: ${Object.keys(req.session)}`);
+      if (req.session.oauthState) {
+        console.log(`🔐 OAuth state present: shop=${req.session.oauthState.shop}, state=${req.session.oauthState.state}`);
+      }
     }
   }
   next();
@@ -46,6 +55,18 @@ app.use((req, res, next) => {
 
 // Healthcheck endpoint
 app.get('/healthz', (_req, res) => res.send('OK'));
+
+// Session debugging endpoint
+app.get('/debug/session', (req, res) => {
+  res.json({
+    sessionID: req.sessionID,
+    sessionExists: !!req.session,
+    sessionKeys: req.session ? Object.keys(req.session) : [],
+    cookies: req.headers.cookie,
+    userAgent: req.headers['user-agent'],
+    timestamp: new Date().toISOString()
+  });
+});
 
 // API endpoints (simplified for now)
 app.get('/api/health', (req, res) => {
@@ -76,6 +97,18 @@ app.get('/auth/shopify/callback', async (req, res) => {
     console.log(`🔄 OAuth callback initiated`);
     console.log(`📱 Session ID: ${req.sessionID}`);
     console.log(`🔑 Session exists: ${!!req.session}`);
+    console.log(`🍪 Cookies: ${req.headers.cookie || 'No cookies'}`);
+    console.log(`🔍 Query params:`, req.query);
+    
+    // Check if we have required parameters
+    const { shop, code, state } = req.query;
+    if (!shop || !code || !state) {
+      console.error('❌ Missing required OAuth parameters:', { shop, code, state });
+      return res.status(400).json({ 
+        error: 'Missing required OAuth parameters',
+        received: { shop: !!shop, code: !!code, state: !!state }
+      });
+    }
     
     const result = await ShopifyService.handleCallback(req.query, req);
     
@@ -96,7 +129,9 @@ app.get('/auth/shopify/callback', async (req, res) => {
       message: error.message,
       stack: error.stack,
       sessionExists: !!req.session,
-      sessionKeys: req.session ? Object.keys(req.session) : 'No session'
+      sessionKeys: req.session ? Object.keys(req.session) : 'No session',
+      sessionID: req.sessionID,
+      cookies: req.headers.cookie
     });
     
     // Send more detailed error response
@@ -105,7 +140,12 @@ app.get('/auth/shopify/callback', async (req, res) => {
       details: error.message,
       sessionInfo: {
         exists: !!req.session,
-        keys: req.session ? Object.keys(req.session) : []
+        keys: req.session ? Object.keys(req.session) : [],
+        sessionID: req.sessionID
+      },
+      requestInfo: {
+        query: req.query,
+        cookies: req.headers.cookie ? 'Present' : 'Missing'
       }
     });
   }

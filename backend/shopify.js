@@ -13,16 +13,31 @@ export class ShopifyService {
     
     const authUrl = `https://${shop}/admin/oauth/authorize?client_id=${process.env.SHOPIFY_API_KEY || '98d5cae75b3fdce1011668a7b6bdc8e2'}&scope=${scopes}&redirect_uri=${process.env.SHOPIFY_APP_URL || 'https://blog-shopify-production.up.railway.app'}/auth/shopify/callback&state=${state}`;
     
+    console.log(`🔐 Generating OAuth URL for shop: ${shop}`);
+    console.log(`🔑 State generated: ${state}`);
+    console.log(`📱 Session exists: ${!!req.session}`);
+    console.log(`📊 Session ID: ${req.sessionID}`);
+    
     // Enhanced session management with better error handling
     if (req && req.session) {
+      // Store OAuth state in session
       req.session.oauthState = { state, shop, timestamp: Date.now() };
       
       // Force session save to ensure persistence
       req.session.save((err) => {
         if (err) {
           console.error('❌ Failed to save OAuth state to session:', err);
+          throw new Error(`Session save failed: ${err.message}`);
         } else {
           console.log(`✅ OAuth state stored for shop: ${shop}, state: ${state}`);
+          console.log(`📊 Session contents after save:`, Object.keys(req.session));
+          
+          // Verify the save was successful
+          if (req.session.oauthState && req.session.oauthState.state === state) {
+            console.log(`✅ OAuth state verification successful`);
+          } else {
+            console.error(`❌ OAuth state verification failed`);
+          }
         }
       });
     } else {

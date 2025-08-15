@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from '@shopify/polaris';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import enTranslations from '@shopify/polaris/locales/en.json';
+import { Provider as AppBridgeProvider } from '@shopify/app-bridge-react';
 
 // Import components
 import Dashboard from './pages/Dashboard';
@@ -23,36 +24,86 @@ const queryClient = new QueryClient();
 const isShopifyAdmin = () => {
   const hostname = window.location.hostname;
   const pathname = window.location.pathname;
+  const urlParams = new URLSearchParams(window.location.search);
+  const shop = urlParams.get('shop');
 
-  // Check for Shopify admin URLs
+  // Check for Shopify admin URLs or shop parameter
   return hostname.includes('myshopify.com') ||
          hostname.includes('shopify.com') ||
          pathname.includes('/admin/apps/') ||
          pathname.includes('/admin/oauth/') ||
-         window.location.search.includes('shop=');
+         !!shop;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AppProvider i18n={enTranslations}>
-      <BrowserRouter>
-        <Routes>
-          {/* Use ShopifyLayout when in Shopify admin, AppLayout when standalone */}
-          <Route path="/" element={isShopifyAdmin() ? <ShopifyLayout /> : <AppLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="products" element={<ProductSelection />} />
-            <Route path="blogs" element={<Blogs />} />
-            <Route path="generate" element={<BlogGeneration />} />
-            <Route path="pricing" element={<Pricing />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-          {/* Auth success page (outside of layout) */}
-          <Route path="auth-success" element={<AuthSuccess />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </AppProvider>
-  </QueryClientProvider>
-);
+// Get shop domain from URL parameters
+const getShopDomain = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('shop');
+};
+
+// Get Shopify API key from environment or use default
+const getShopifyApiKey = () => {
+  return import.meta.env.VITE_SHOPIFY_API_KEY || '98d5cae75b3fdce1011668a7b6bdc8e2';
+};
+
+const App = () => {
+  const isAdmin = isShopifyAdmin();
+  const shopDomain = getShopDomain();
+  const apiKey = getShopifyApiKey();
+
+  console.log('🔍 App initialization:', {
+    isShopifyAdmin: isAdmin,
+    shopDomain,
+    apiKey: apiKey ? 'Present' : 'Missing'
+  });
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppProvider i18n={enTranslations}>
+        {isAdmin && shopDomain ? (
+          // Wrap with App Bridge Provider when in Shopify admin
+          <AppBridgeProvider
+            config={{
+              apiKey: apiKey,
+              host: shopDomain,
+              forceRedirect: false
+            }}
+          >
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<ShopifyLayout />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="products" element={<ProductSelection />} />
+                  <Route path="blogs" element={<Blogs />} />
+                  <Route path="generate" element={<BlogGeneration />} />
+                  <Route path="pricing" element={<Pricing />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
+                <Route path="auth-success" element={<AuthSuccess />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </AppBridgeProvider>
+        ) : (
+          // Standalone app without App Bridge
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<AppLayout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="products" element={<ProductSelection />} />
+                <Route path="blogs" element={<Blogs />} />
+                <Route path="generate" element={<BlogGeneration />} />
+                <Route path="pricing" element={<Pricing />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+              <Route path="auth-success" element={<AuthSuccess />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        )}
+      </AppProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
