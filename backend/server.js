@@ -4,8 +4,7 @@ import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { createClient } from 'redis';
 import dotenv from 'dotenv';
-import '@shopify/shopify-api/adapters/node';
-import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
+import { shopifyApi } from '@shopify/shopify-api';
 import path from 'path';
 
 dotenv.config();
@@ -102,14 +101,14 @@ app.listen(PORT, () => {
     if (process.env.SHOPIFY_API_KEY && process.env.SHOPIFY_API_SECRET && process.env.SCOPES && (process.env.HOST || process.env.SHOPIFY_APP_URL)) {
       try {
         const hostName = (process.env.HOST || process.env.SHOPIFY_APP_URL).replace(/^https?:\/\//, '');
-        // Version 11.x uses different initialization
+        // Simple Shopify API initialization
         const shopify = shopifyApi({
           apiKey: process.env.SHOPIFY_API_KEY,
           apiSecretKey: process.env.SHOPIFY_API_SECRET,
           scopes: process.env.SCOPES.split(','),
           hostName: hostName,
           isEmbeddedApp: true,
-          apiVersion: LATEST_API_VERSION,
+          apiVersion: '2025-07',
         });
         
         // Test Shopify API init
