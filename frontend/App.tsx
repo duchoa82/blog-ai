@@ -3,8 +3,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from '@shopify/polaris';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import enTranslations from '@shopify/polaris/locales/en.json';
-import { createApp } from '@shopify/app-bridge';
-import { Provider as AppBridgeProvider } from '@shopify/app-bridge-react';
 
 // Import components
 import Dashboard from './pages/Dashboard';
@@ -62,31 +60,21 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <AppProvider i18n={enTranslations}>
         {isAdmin && shopDomain ? (
-          // Wrap with App Bridge Provider when in Shopify admin
-          <AppBridgeProvider
-            config={{
-              apiKey: apiKey,
-              host: shopDomain,
-              forceRedirect: false
-            }}
-            createApp={createApp}
-          >
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<ShopifyLayout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="products" element={<ProductSelection />} />
-                  <Route path="blogs" element={<Blogs />} />
-                  <Route path="generate" element={<BlogGeneration />} />
-                  <Route path="pricing" element={<Pricing />} />
-                  <Route path="settings" element={<Settings />} />
-                </Route>
-                <Route path="auth-success" element={<AuthSuccess />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+          // Use ShopifyLayout when in Shopify admin
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<ShopifyLayout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="products" element={<ProductSelection />} />
+                <Route path="blogs" element={<Blogs />} />
+                <Route path="generate" element={<BlogGeneration />} />
+                <Route path="pricing" element={<Pricing />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+              <Route path="auth-success" element={<AuthSuccess />} />
+              <Route path="*" element={<NotFound />} />
             </BrowserRouter>
-          </AppBridgeProvider>
-        ) : (
+          ) : (
           // Standalone app without App Bridge
           <BrowserRouter>
             <Routes>

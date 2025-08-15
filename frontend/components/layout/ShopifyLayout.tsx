@@ -1,24 +1,16 @@
 import { Outlet } from "react-router-dom";
-import { NavMenu } from '@shopify/app-bridge-react';
-import { useAppBridge } from '@shopify/app-bridge-react';
-import { useEffect, useState } from 'react';
 import "./ShopifyLayout.css";
 
 const ShopifyLayout = () => {
-  const app = useAppBridge();
-
-  console.log('🚀 ShopifyLayout component loaded with App Bridge React!');
-  console.log('🔍 App Bridge app:', app);
-
   return (
     <div className="shopify-layout">
-      {/* Shopify App Bridge React Navigation Menu */}
-      <NavMenu>
-        <a href="/" rel="home">Dashboard</a>
-        <a href="/blogs">Blogs</a>
-        <a href="/pricing">Pricing</a>
+      {/* Simple Navigation */}
+      <nav style={{ padding: '20px', backgroundColor: '#f6f6f7' }}>
+        <a href="/" style={{ marginRight: '20px' }}>Dashboard</a>
+        <a href="/blogs" style={{ marginRight: '20px' }}>Blogs</a>
+        <a href="/pricing" style={{ marginRight: '20px' }}>Pricing</a>
         <a href="/settings">Settings</a>
-      </NavMenu>
+      </nav>
 
       {/* Main Content Area */}
       <div className="shopify-main-content">
