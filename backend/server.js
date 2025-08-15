@@ -120,20 +120,32 @@ app.listen(PORT, () => {
           return res.redirect(authRoute);
         });
 
-        app.get('/auth/shopify/callback', async (req, res) => {
-          try {
-            const session = await shopifyApi.auth.validateAuthCallback(req, res);
-            console.log('✅ Shopify session:', session);
-            // Redirect to frontend after successful auth
-            const frontendUrl = process.env.FRONTEND_URL || 'https://blog-shopify-production.up.railway.app';
-            res.redirect(frontendUrl);
-          } catch (error) {
-            console.error('❌ Auth failed:', error);
-            res.status(500).send('Auth failed');
-          }
+        app.get('/auth/shopify/callback', (req, res) => {
+          console.log('🔍 === CALLBACK DEBUG ===');
+          console.log('✅ Callback hit:', req.originalUrl);
+          console.log('📝 Query params:', req.query);
+          console.log('🌐 Full URL:', req.protocol + '://' + req.get('host') + req.originalUrl);
+          console.log('🔑 Shopify API Key:', process.env.SHOPIFY_API_KEY ? '✅ Set' : '❌ Missing');
+          console.log('🔐 Shopify API Secret:', process.env.SHOPIFY_API_SECRET ? '✅ Set' : '❌ Missing');
+          console.log('📋 Scopes:', process.env.SCOPES || '❌ Missing');
+          console.log('🏠 HOST:', process.env.HOST || '❌ Missing');
+          console.log('🔗 SHOPIFY_APP_URL:', process.env.SHOPIFY_APP_URL || '❌ Missing');
+          console.log('================================');
+          
+          // Temporary test response
+          res.send(`
+            <h1>🎯 Callback Reached Successfully!</h1>
+            <p><strong>URL:</strong> ${req.originalUrl}</p>
+            <p><strong>Shop:</strong> ${req.query.shop || 'N/A'}</p>
+            <p><strong>HMAC:</strong> ${req.query.hmac ? '✅ Present' : '❌ Missing'}</p>
+            <p><strong>Timestamp:</strong> ${req.query.timestamp || 'N/A'}</p>
+            <hr>
+            <p><em>This is a test route. Check server logs for full debug info.</em></p>
+          `);
         });
 
         // ===== Handle Shopify redirect to root with OAuth params =====
+        // Override the basic healthcheck route to handle OAuth redirects
         app.get('/', (req, res) => {
           // Check if this is Shopify OAuth redirect
           if (req.query.shop && req.query.hmac && req.query.timestamp) {
