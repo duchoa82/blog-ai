@@ -15,40 +15,42 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ====== Redis Session Store ======
+// ===== Redis Session Store (v7+) =====
 console.log('🔍 Redis Configuration:');
 console.log('📊 REDIS_URL:', process.env.REDIS_URL ? 'Present' : 'Missing');
 console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
 console.log('🔒 REDIS_TLS:', process.env.REDIS_TLS);
 
-const RedisStore = connectRedis(session);
-
 const redisClient = new Redis(process.env.REDIS_URL, {
-  tls: process.env.REDIS_TLS === 'true' ? {} : undefined, // Railway Redis thường cần TLS
+  tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
   retryDelayOnFailover: 100,
   maxRetriesPerRequest: 3
 });
 
-// Test Redis connection
 redisClient.on('connect', () => {
   console.log('✅ Redis connection established successfully');
 });
 
 redisClient.on('error', (err) => {
   console.error('❌ Redis connection failed:', err);
-  console.error('🔍 Falling back to MemoryStore');
+  process.exit(1); // Dừng server nếu Redis không kết nối
 });
 
-// ====== Redis Session Store ======
+const RedisStore = connectRedis({
+  client: redisClient,
+  prefix: 'sess:', // để phân biệt session key trong Redis
+  ttl: 24 * 60 * 60, // 1 ngày
+});
+
 app.use(session({
-  store: new RedisStore({ client: redisClient }),
+  store: RedisStore,
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // true nếu chạy HTTPS
-    sameSite: 'none', // Shopify app trong iframe cần 'none'
-    maxAge: 24 * 60 * 60 * 1000, // 24h
+    secure: process.env.NODE_ENV === 'production', // true khi deploy HTTPS
+    sameSite: 'none',
+    maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true
   },
   name: 'shopify-app-session'
