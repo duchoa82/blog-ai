@@ -4,7 +4,7 @@ import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { createClient } from 'redis';
 import dotenv from 'dotenv';
-import { shopifyApi, Session } from '@shopify/shopify-api';
+import { shopifyApi, MemorySessionStorage } from '@shopify/shopify-api';
 
 dotenv.config();
 const app = express();
@@ -20,7 +20,6 @@ async function initializeApp() {
         rejectUnauthorized: false,
       },
     });
-
     redisClient.on('error', (err) => console.error('Redis Client Error', err));
     await redisClient.connect();
     console.log('✅ Redis connected successfully');
@@ -32,29 +31,21 @@ async function initializeApp() {
         secret: process.env.SESSION_SECRET || 'keyboard cat',
         resave: false,
         saveUninitialized: false,
-        cookie: {
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 24 * 60 * 60 * 1000,
-        },
+        cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 24 * 60 * 60 * 1000 },
       })
     );
 
     // ===== Shopify API initialization =====
-    try {
-      shopifyApi.initialize({
-        apiKey: process.env.SHOPIFY_API_KEY,
-        apiSecretKey: process.env.SHOPIFY_API_SECRET,
-        scopes: process.env.SHOPIFY_SCOPES.split(','),
-        hostName: process.env.SHOPIFY_APP_URL.replace(/^https?:\/\//, ''),
-        isEmbeddedApp: true,
-        apiVersion: '2025-07',
-        sessionStorage: new Session.MemorySessionStorage(),
-      });
-      console.log('✅ Shopify API initialized');
-    } catch (shopifyError) {
-      console.error('❌ Shopify API initialization failed:', shopifyError);
-      console.log('⚠️ Shopify OAuth routes disabled');
-    }
+    shopifyApi.initialize({
+      apiKey: process.env.SHOPIFY_API_KEY,
+      apiSecretKey: process.env.SHOPIFY_API_SECRET,
+      scopes: process.env.SHOPIFY_SCOPES.split(','),
+      hostName: process.env.SHOPIFY_APP_URL.replace(/^https?:\/\//, ''),
+      isEmbeddedApp: true,
+      apiVersion: '2025-07',
+      sessionStorage: new MemorySessionStorage(),
+    });
+    console.log('✅ Shopify API initialized');
 
     // ===== Routes =====
     app.get('/', (req, res) => res.send('OK'));
@@ -65,7 +56,7 @@ async function initializeApp() {
       res.send(`You visited this page ${req.session.views} times`);
     });
 
-    // ===== Auth routes =====
+    // ===== Shopify OAuth routes =====
     app.get('/auth/shopify', async (req, res) => {
       const shop = req.query.shop;
       if (!shop) return res.status(400).send('Missing shop parameter');
@@ -95,7 +86,6 @@ async function initializeApp() {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`🔍 Healthcheck: http://localhost:${PORT}/healthz`);
     });
-
   } catch (error) {
     console.error('❌ App initialization failed:', error);
     process.exit(1);
