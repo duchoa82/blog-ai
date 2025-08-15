@@ -1,172 +1,81 @@
-# Blog SEO AI - Shopify App
+# Blog AI Backend API
 
-A modern Shopify app for AI-powered blog content generation, built with Shopify Polaris design system.
+Shopify Backend API for Blog AI App with OAuth flow.
 
-## Project Overview
+## 🚀 Quick Start
 
-This application helps Shopify store owners generate SEO-optimized blog content for their products using AI. The app features:
-
-- **Dashboard**: Overview of blog performance and recent posts
-- **Product Selection**: Choose products to generate content for
-- **Blog Generation**: AI-powered content creation with SEO optimization
-- **Settings**: Configure AI preferences and API integrations
-
-## Technologies Used
-
-This project is built with:
-
-- **React 18** - Modern React with hooks and functional components
-- **TypeScript** - Type-safe JavaScript
-- **Shopify Polaris** - Official Shopify design system and component library
-- **Vite** - Fast build tool and development server
-- **React Router** - Client-side routing
-- **React Query** - Data fetching and state management
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+ and npm
-- Shopify Partner account (for app development)
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <YOUR_GIT_URL>
-cd blog-seo-ai-main
-```
-
-2. Install dependencies:
+### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-3. Start the development server:
+### 2. Environment Variables
+Copy `env.example` to `.env` and fill in your values:
 ```bash
-npm run dev
+cp env.example .env
 ```
 
-4. Open your browser and navigate to `http://localhost:5173`
-
-## Project Structure
-
-```
-src/
-├── components/
-│   └── layout/
-│       ├── AppLayout.tsx      # Main app layout with Polaris Frame
-│       └── Sidebar.tsx        # Navigation sidebar
-├── pages/
-│   ├── Dashboard.tsx          # Main dashboard with stats and recent posts
-│   ├── ProductSelection.tsx   # Product selection interface
-│   ├── BlogGeneration.tsx     # AI content generation
-│   ├── Settings.tsx           # App configuration
-│   └── NotFound.tsx           # 404 page
-├── App.tsx                    # Main app component with routing
-└── main.tsx                   # App entry point
-```
-
-## Key Features
-
-### 🎨 Shopify Polaris Design System
-- Consistent with Shopify's design language
-- Accessible and responsive components
-- Professional UI/UX experience
-
-### 📊 Dashboard
-- Real-time statistics and metrics
-- Recent blog posts overview
-- Quick action buttons
-
-### 🛍️ Product Selection
-- Grid layout for product browsing
-- Search and filtering capabilities
-- Product details and ratings
-
-### 🤖 AI Content Generation
-- SEO-optimized content creation
-- Customizable writing styles
-- Keyword targeting and optimization
-
-### ⚙️ Settings
-- API configuration (OpenAI, Shopify)
-- Default content preferences
-- Blog post templates
-
-## Development
-
-### Adding New Pages
-
-1. Create a new page component in `src/pages/`
-2. Use Polaris components for consistent styling
-3. Add the route in `src/App.tsx`
-4. Update navigation in `src/components/layout/Sidebar.tsx`
-
-### Styling Guidelines
-
-- Use Polaris components whenever possible
-- Follow Polaris design patterns and spacing
-- Maintain consistency with Shopify's design system
-
-### Component Structure
-
-```tsx
-import { Page, Card, Layout, Stack } from "@shopify/polaris";
-
-const MyPage = () => {
-  return (
-    <Page title="Page Title" subtitle="Page description">
-      <Layout>
-        <Layout.Section>
-          <Card>
-            <Card.Section>
-              {/* Content */}
-            </Card.Section>
-          </Card>
-        </Layout.Section>
-      </Layout>
-    </Page>
-  );
-};
-```
-
-## Deployment
-
-### For Shopify App Development
-
-1. Build the app for production:
+### 3. Start Server
 ```bash
-npm run build
+npm start
 ```
 
-2. Follow Shopify's app development guidelines for deployment
-3. Configure your app in the Shopify Partner dashboard
+## 🔑 OAuth Flow
 
-### For General Web Deployment
-
-1. Build the app:
-```bash
-npm run build
+### 1. Initiate OAuth
+```
+GET /auth/shopify?shop=your-shop.myshopify.com
 ```
 
-2. Deploy the `dist` folder to your preferred hosting service
+### 2. Shopify Redirect
+User will be redirected to Shopify for authorization.
 
-## Contributing
+### 3. OAuth Callback
+```
+GET /auth/shopify/callback
+```
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+## 📡 API Endpoints
 
-## License
+- `GET /` - API status
+- `GET /healthz` - Health check
+- `GET /test` - Test endpoint
+- `GET /auth/shopify` - OAuth initiation
+- `GET /auth/shopify/callback` - OAuth callback
 
-This project is licensed under the MIT License.
+## 🛠️ Tech Stack
 
-## Support
+- **Express.js** - Web framework
+- **Shopify API v7.x** - Stable Shopify integration
+- **MemorySessionStorage** - Simple session management
+- **CORS** - Cross-origin support
 
-For support and questions:
-- Check the [Shopify Polaris documentation](https://polaris.shopify.com/)
-- Review the [React documentation](https://react.dev/)
-- Open an issue in this repository
+## 🔧 Configuration
+
+### Shopify App Setup
+1. **App Scopes:** `read_products,write_products,read_blog,write_blog`
+2. **Redirect URL:** `https://blog-ai-be.up.railway.app/auth/shopify/callback`
+3. **API Version:** `2025-07`
+
+### Environment Variables
+- `SHOPIFY_API_KEY` - Your app API key
+- `SHOPIFY_API_SECRET` - Your app secret
+- `SHOPIFY_SCOPES` - App permissions
+- `SHOPIFY_APP_URL` - Backend domain
+- `FRONTEND_URL` - Frontend domain for CORS
+
+## 🚀 Deployment
+
+### Railway
+1. Create new service: `blog-ai-be`
+2. Connect GitHub repository
+3. Set environment variables
+4. Deploy!
+
+## 📝 Next Steps
+
+After OAuth flow works:
+1. Add Redis session storage
+2. Implement GraphQL Admin API endpoints
+3. Implement Storefront API endpoints
+4. Add rate limiting and error handling
