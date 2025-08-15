@@ -4,8 +4,8 @@ import { fileURLToPath } from 'url';
 import { ShopifyService } from './shopify.js';
 import dotenv from 'dotenv';
 import session from 'express-session';
-import RedisStorePkg from 'connect-redis';
-import { createClient } from 'redis';
+import Redis from 'ioredis';
+import connectRedis from 'connect-redis';
 
 dotenv.config();
 
@@ -19,22 +19,25 @@ const PORT = process.env.PORT || 3000;
 console.log('🔍 Redis Configuration:');
 console.log('📊 REDIS_URL:', process.env.REDIS_URL ? 'Present' : 'Missing');
 console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
+console.log('🔒 REDIS_TLS:', process.env.REDIS_TLS);
 
-const RedisStore = RedisStorePkg(session);
-const redisClient = createClient({
-  url: process.env.REDIS_URL,
-  legacyMode: true // cho connect-redis v6 trở xuống
+const RedisStore = connectRedis(session);
+
+const redisClient = new Redis(process.env.REDIS_URL, {
+  tls: process.env.REDIS_TLS === 'true' ? {} : undefined, // Railway Redis thường cần TLS
+  retryDelayOnFailover: 100,
+  maxRetriesPerRequest: 3
 });
 
 // Test Redis connection
-redisClient.connect()
-  .then(() => {
-    console.log('✅ Redis connection established successfully');
-  })
-  .catch((err) => {
-    console.error('❌ Redis connection failed:', err);
-    console.error('🔍 Falling back to MemoryStore');
-  });
+redisClient.on('connect', () => {
+  console.log('✅ Redis connection established successfully');
+});
+
+redisClient.on('error', (err) => {
+  console.error('❌ Redis connection failed:', err);
+  console.error('🔍 Falling back to MemoryStore');
+});
 
 // ====== Redis Session Store ======
 app.use(session({
