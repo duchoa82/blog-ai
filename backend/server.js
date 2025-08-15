@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url';
 import { ShopifyService } from './shopify.js';
 import dotenv from 'dotenv';
 import session from 'express-session';
-import MemoryStore from 'memorystore';
+import RedisStorePkg from 'connect-redis';
+import { createClient } from 'redis';
 
 dotenv.config();
 
@@ -14,19 +15,24 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Session middleware with MemoryStore for better production handling
+// ====== Redis Session Store ======
+const RedisStore = RedisStorePkg(session);
+const redisClient = createClient({
+  url: process.env.REDIS_URL,
+  legacyMode: true // cho connect-redis v6 trở xuống
+});
+redisClient.connect().catch(console.error);
+
+// ====== Redis Session Store ======
 app.use(session({
-  store: new (MemoryStore(session))({
-    checkPeriod: 86400000, // prune expired entries every 24h
-    ttl: 24 * 60 * 60 * 1000 // 24 hours
-  }),
+  store: new RedisStore({ client: redisClient }),
   secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: true,
-  saveUninitialized: true,
+  resave: false,
+  saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    secure: process.env.NODE_ENV === 'production', // true nếu chạy HTTPS
+    sameSite: 'none', // Shopify app trong iframe cần 'none'
+    maxAge: 24 * 60 * 60 * 1000, // 24h
     httpOnly: true
   },
   name: 'shopify-app-session'
