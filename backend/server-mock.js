@@ -1,4 +1,4 @@
-// server-mock.js
+// server-mock.js - Backend with Real Shopify OAuth
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 // ===== Middleware =====
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  credentials: true,
 }));
 app.use(express.json());
 
@@ -29,8 +29,8 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'keyboard cat',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: false, 
+  cookie: {
+    secure: false,
     maxAge: 24*60*60*1000,
     sameSite: 'lax'
   }
@@ -39,17 +39,17 @@ app.use(session({
 // ===== Shopify OAuth Configuration =====
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY || 'mock-api-key';
 const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET || 'mock-api-secret';
-const SHOPIFY_SCOPES = process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_blog';
+const SHOPIFY_SCOPES = process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_content,write_content';
 const SHOPIFY_APP_URL = process.env.SHOPIFY_APP_URL || 'http://localhost:3000';
 
-// ===== Root Route - Handle Shopify App Load =====
+// ===== Root Route - Serve Frontend or Shopify App =====
 app.get('/', (req, res) => {
   const { hmac, host, shop, timestamp } = req.query;
-  
+
   if (hmac && shop) {
     // Shopify app load - serve HTML app interface
     console.log(`🔄 Shopify app load for shop: ${shop}`);
-    
+
     const html = `
 <!DOCTYPE html>
 <html>
@@ -124,7 +124,7 @@ app.get('/', (req, res) => {
     </script>
 </body>
 </html>`;
-    
+
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
   } else {
@@ -134,7 +134,7 @@ app.get('/', (req, res) => {
   }
 });
 
-// ===== OAuth Routes =====
+// ===== Real OAuth Routes =====
 app.get('/auth/shopify', (req, res) => {
   const shop = req.query.shop;
   
@@ -160,16 +160,11 @@ app.get('/auth/shopify', (req, res) => {
   console.log(`🔄 OAuth initiated for shop: ${shop}`);
   console.log(`🔗 Redirect URL: ${redirectUrl}`);
   
-  res.json({ 
-    message: 'OAuth URL generated',
-    shop,
-    redirectUrl,
-    state,
-    scopes: SHOPIFY_SCOPES
-  });
+  // ✅ FIX: Redirect user to Shopify consent screen instead of returning JSON
+  res.redirect(redirectUrl);
 });
 
-app.get('/auth/shopify/callback', (req, res) => {
+app.get('/auth/shopify/callback', async (req, res) => {
   const { code, state, shop } = req.query;
   
   console.log('🔄 OAuth callback received:', { code: !!code, state, shop });
@@ -179,7 +174,7 @@ app.get('/auth/shopify/callback', (req, res) => {
     console.error('❌ OAuth state mismatch');
     return res.status(400).json({ 
       error: 'OAuth callback failed',
-      details: 'No OAuth state found in session or state mismatch'
+      details: 'Invalid OAuth state' 
     });
   }
 
@@ -187,23 +182,49 @@ app.get('/auth/shopify/callback', (req, res) => {
     console.error('❌ Missing OAuth parameters');
     return res.status(400).json({ 
       error: 'OAuth callback failed',
-      details: 'Missing code or shop parameter'
+      details: 'Missing code or shop parameter' 
     });
   }
 
-  // Mock successful OAuth (in real app, exchange code for access token)
-  console.log('✅ OAuth successful for shop:', shop);
-  
-  // Clear OAuth state
-  delete req.session.oauthState;
-  
-  res.json({ 
-    success: true, 
-    shop,
-    message: 'OAuth completed successfully (mocked)',
-    code: code.substring(0, 10) + '...',
-    scopes: SHOPIFY_SCOPES
-  });
+  try {
+    // ✅ FIX: Exchange code for access token with Shopify
+    const tokenResponse = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: SHOPIFY_API_KEY,
+        client_secret: SHOPIFY_API_SECRET,
+        code
+      })
+    });
+
+    const tokenData = await tokenResponse.json();
+    
+    if (tokenData.error) {
+      throw new Error(tokenData.error_description || tokenData.error);
+    }
+
+    console.log('✅ OAuth successful for shop:', shop);
+    console.log('🔑 Access token received:', !!tokenData.access_token);
+    console.log('📋 Scope:', tokenData.scope);
+    
+    // Clear OAuth state
+    delete req.session.oauthState;
+    
+    res.json({
+      success: true,
+      shop,
+      accessToken: tokenData.access_token,
+      scope: tokenData.scope,
+      message: 'OAuth completed successfully!'
+    });
+  } catch (err) {
+    console.error('❌ OAuth exchange failed:', err);
+    res.status(500).json({ 
+      error: 'OAuth exchange failed', 
+      details: err.message 
+    });
+  }
 });
 
 // ===== Test Endpoints =====
@@ -236,10 +257,12 @@ app.use((err, req, res, next) => {
 
 // ===== Start server =====
 app.listen(PORT, () => {
-  console.log(`🚀 Mock backend running on port ${PORT}`);
+  console.log(`🚀 Backend with Real OAuth running on port ${PORT}`);
   console.log(`🔍 Healthcheck: http://localhost:${PORT}/healthz`);
   console.log(`🔑 Test endpoint: http://localhost:${PORT}/test`);
   console.log(`🔐 OAuth: http://localhost:${PORT}/auth/shopify?shop=your-shop.myshopify.com`);
   console.log(`📊 Session debug: http://localhost:${PORT}/session`);
   console.log(`🌐 Frontend: http://localhost:${PORT}/ (serving dist/ folder)`);
+  console.log(`📡 CORS enabled for external frontend`);
+  console.log(`✅ Real OAuth flow implemented with code exchange`);
 });
