@@ -18,6 +18,8 @@ const __dirname = path.dirname(__filename);
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 app.use(express.json());
 
@@ -27,15 +29,23 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // ===== Session setup =====
 app.use(session({
   secret: process.env.SESSION_SECRET || 'keyboard cat',
-  resave: true, // Changed to true to ensure state is saved
-  saveUninitialized: true, // Changed to true to save OAuth state
+  resave: true,
+  saveUninitialized: true,
   cookie: {
     secure: false,
     maxAge: 24*60*60*1000,
     sameSite: 'lax',
-    httpOnly: true
-  }
+    httpOnly: true,
+    domain: process.env.NODE_ENV === 'production' ? '.up.railway.app' : undefined
+  },
+  name: 'blog-ai-session' // Custom session name
 }));
+
+// Session middleware logging
+app.use((req, res, next) => {
+  console.log(`📊 Session middleware - ID: ${req.sessionID}, State: ${req.session.oauthState || 'not set'}`);
+  next();
+});
 
 // ===== Shopify OAuth Configuration =====
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY || 'mock-api-key';
