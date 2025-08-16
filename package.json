@@ -1,24 +1,24 @@
 {
-  "name": "blog-ai-backend",
+  "name": "blog-seo-ai",
   "version": "1.0.0",
-  "description": "Shopify Backend API for Blog AI App",
-  "main": "server-mock.js",
-  "type": "module",
+  "description": "Blog AI Shopify App",
   "scripts": {
-    "start": "node server-mock.js",
-    "dev": "nodemon server-mock.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node backend/server-mock.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "express-session": "^1.17.3",
-    "connect-redis": "^6.1.3",
-    "redis": "^4.7.1",
-    "@shopify/shopify-api": "^7.7.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "cors": "^2.8.5"
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "vite": "^5.4.19",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "engines": {
     "node": ">=18.0.0"

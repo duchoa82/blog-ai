@@ -2,7 +2,6 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "bash start.sh"
 healthcheckPath = "/healthz"
 healthcheckTimeout = 60
 
