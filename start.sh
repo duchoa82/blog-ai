@@ -11,4 +11,4 @@ npm ci
 cd ..
 
 # Start backend server
-node backend/server.js
+node backend/server-mock.js
