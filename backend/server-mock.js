@@ -47,86 +47,14 @@ app.get('/', (req, res) => {
   const { hmac, host, shop, timestamp } = req.query;
 
   if (hmac && shop) {
-    // Shopify app load - serve HTML app interface
-    console.log(`🔄 Shopify app load for shop: ${shop}`);
-
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Blog AI - Shopify App</title>
-    <script src="https://unpkg.com/@shopify/app-bridge@3.7.9/dist/index.global.js"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f6f6f7; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #004c3f; margin-bottom: 20px; }
-        .status { background: #d1fae5; border: 1px solid #10b981; padding: 15px; border-radius: 6px; margin: 20px 0; }
-        .shop-info { background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0; }
-        .btn { background: #004c3f; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
-        .btn:hover { background: #065f46; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🚀 Blog AI - Shopify App</h1>
-        
-        <div class="status">
-            <strong>✅ App Status:</strong> Successfully loaded in Shopify Admin
-        </div>
-        
-        <div class="shop-info">
-            <strong>🏪 Shop:</strong> ${shop}<br>
-            <strong>🔑 API Key:</strong> ${SHOPIFY_API_KEY}<br>
-            <strong>📋 Scopes:</strong> ${SHOPIFY_SCOPES}<br>
-            <strong>⏰ Loaded at:</strong> ${new Date().toISOString()}
-        </div>
-        
-        <h3>🎯 Next Steps:</h3>
-        <ul>
-            <li>✅ OAuth flow completed</li>
-            <li>🔧 Configure app settings</li>
-            <li>📝 Start creating blog content</li>
-            <li>🚀 Deploy AI features</li>
-        </ul>
-        
-        <button class="btn" onclick="testAPI()">🧪 Test Backend API</button>
-        <button class="btn" onclick="window.location.href='/healthz'">🔍 Health Check</button>
-        
-        <div id="api-result" style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 6px; display: none;"></div>
-    </div>
+    // Shopify app load - redirect to OAuth flow instead of serving HTML
+    console.log(`🔄 Shopify app load detected for shop: ${shop}`);
+    console.log(`🔄 Redirecting to OAuth flow...`);
     
-    <script>
-        // Initialize Shopify App Bridge
-        try {
-            const app = window.createApp({
-                apiKey: '${SHOPIFY_API_KEY}',
-                host: '${host}',
-                forceRedirect: true
-            });
-            console.log('✅ Shopify App Bridge initialized');
-        } catch (error) {
-            console.error('❌ App Bridge error:', error);
-        }
-        
-        async function testAPI() {
-            try {
-                const response = await fetch('/test');
-                const data = await response.json();
-                document.getElementById('api-result').innerHTML = '<strong>API Response:</strong><br>' + JSON.stringify(data, null, 2);
-                document.getElementById('api-result').style.display = 'block';
-            } catch (error) {
-                document.getElementById('api-result').innerHTML = '<strong>API Error:</strong><br>' + error.message;
-                document.getElementById('api-result').style.display = 'block';
-            }
-        }
-    </script>
-</body>
-</html>`;
-
-    res.setHeader('Content-Type', 'text/html');
-    res.send(html);
+    // Redirect to OAuth initiation instead of serving HTML
+    const oauthUrl = `/auth/shopify?shop=${shop}`;
+    console.log(`🔗 Redirecting to: ${oauthUrl}`);
+    res.redirect(oauthUrl);
   } else {
     // Direct access - serve frontend HTML
     console.log('🔄 Serving frontend for direct access');
