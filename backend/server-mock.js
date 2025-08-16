@@ -27,12 +27,13 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // ===== Session setup =====
 app.use(session({
   secret: process.env.SESSION_SECRET || 'keyboard cat',
-  resave: false,
-  saveUninitialized: false,
+  resave: true, // Changed to true to ensure state is saved
+  saveUninitialized: true, // Changed to true to save OAuth state
   cookie: {
     secure: false,
     maxAge: 24*60*60*1000,
-    sameSite: 'lax'
+    sameSite: 'lax',
+    httpOnly: true
   }
 }));
 
@@ -174,19 +175,30 @@ app.get('/auth/shopify', (req, res) => {
   const state = Math.random().toString(36).substring(7);
   req.session.oauthState = state;
   req.session.shop = shop;
-
-  // Build OAuth URL
-  const redirectUrl = `https://${shop}/admin/oauth/authorize?` +
-    `client_id=${SHOPIFY_API_KEY}&` +
-    `scope=${SHOPIFY_SCOPES}&` +
-    `redirect_uri=${SHOPIFY_APP_URL}/auth/shopify/callback&` +
-    `state=${state}`;
-
-  console.log(`🔄 OAuth initiated for shop: ${shop}`);
-  console.log(`🔗 Redirect URL: ${redirectUrl}`);
   
-  // ✅ FIX: Redirect user to Shopify consent screen instead of returning JSON
-  res.redirect(redirectUrl);
+  // Force session save
+  req.session.save((err) => {
+    if (err) {
+      console.error('❌ Session save failed:', err);
+      return res.status(500).json({ error: 'Session save failed' });
+    }
+    
+    console.log(`🔄 OAuth initiated for shop: ${shop}`);
+    console.log(`🔑 OAuth state saved: ${state}`);
+    console.log(`📊 Session ID: ${req.sessionID}`);
+    
+    // Build OAuth URL
+    const redirectUrl = `https://${shop}/admin/oauth/authorize?` +
+      `client_id=${SHOPIFY_API_KEY}&` +
+      `scope=${SHOPIFY_SCOPES}&` +
+      `redirect_uri=${SHOPIFY_APP_URL}/auth/shopify/callback&` +
+      `state=${state}`;
+
+    console.log(`🔗 Redirect URL: ${redirectUrl}`);
+    
+    // Redirect user to Shopify consent screen
+    res.redirect(redirectUrl);
+  });
 });
 
 app.get('/auth/shopify/callback', async (req, res) => {
@@ -269,7 +281,36 @@ app.get('/session', (req, res) => {
     sessionId: req.sessionID,
     shop: req.session.shop,
     oauthState: req.session.oauthState ? 'set' : 'not set',
-    timestamp: new Date().toISOString()
+    accessToken: req.session.accessToken ? 'present' : 'not present',
+    scope: req.session.scope,
+    timestamp: new Date().toISOString(),
+    sessionData: req.session
+  });
+});
+
+app.get('/debug-oauth', (req, res) => {
+  const { shop } = req.query;
+  if (!shop) {
+    return res.json({ error: 'Missing shop parameter' });
+  }
+  
+  // Simulate OAuth initiation for debugging
+  const state = Math.random().toString(36).substring(7);
+  req.session.oauthState = state;
+  req.session.shop = shop;
+  
+  req.session.save((err) => {
+    if (err) {
+      return res.json({ error: 'Session save failed', details: err.message });
+    }
+    
+    res.json({
+      message: 'OAuth state set for debugging',
+      shop,
+      state,
+      sessionId: req.sessionID,
+      sessionData: req.session
+    });
   });
 });
 
