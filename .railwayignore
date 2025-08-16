@@ -1,7 +1,11 @@
-dist/
-node_modules/
-.git/
-.DS_Store
-*.log
-.env
+# Ignore frontend build artifacts
+frontend/dist/
+frontend/node_modules/
+
+# Ignore backend node_modules (will be installed fresh)
+backend/node_modules/
+
+# Ignore local development files
 .env.local
+.env.development
+*.log
