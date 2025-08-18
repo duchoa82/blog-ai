@@ -21,6 +21,20 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
+
+// Add CSP headers to allow Shopify domains
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://*.shopify.com; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "frame-ancestors 'self' https://*.shopify.com; " +
+    "connect-src 'self' https://*.shopify.com; " +
+    "img-src 'self' data: https:; " +
+    "font-src 'self' data:;"
+  );
+  next();
+});
 app.use(express.json());
 
 // ===== Serve static frontend files =====
@@ -145,7 +159,8 @@ function serveMainAppUI(req, res, shop) {
             const app = window.createApp({
                 apiKey: '${SHOPIFY_API_KEY}',
                 host: 'admin.shopify.com',
-                forceRedirect: true
+                forceRedirect: false, // Changed to false to avoid iframe issues
+                isEmbedded: false // Explicitly set to false
             });
             console.log('✅ Shopify App Bridge initialized');
         } catch (error) {
@@ -155,17 +170,52 @@ function serveMainAppUI(req, res, shop) {
         async function initiateOAuth() {
             try {
                 console.log('🔄 Initiating OAuth flow...');
-                // Redirect directly to Shopify OAuth endpoint
+                // Use window.open to avoid CSP issues
                 const oauthUrl = 'https://${shop}/admin/oauth/authorize?' +
                     'client_id=${SHOPIFY_API_KEY}&' +
                     'scope=${SHOPIFY_SCOPES}&' +
                     'redirect_uri=${SHOPIFY_APP_URL}/auth/shopify/callback&' +
                     'state=' + Math.random().toString(36).substring(7);
-                console.log('🔗 Redirecting to Shopify OAuth:', oauthUrl);
-                window.location.href = oauthUrl;
+                console.log('🔗 Opening Shopify OAuth in new window:', oauthUrl);
+                
+                const oauthWindow = window.open(oauthUrl, 'shopify_oauth', 'width=800,height=600');
+                
+                // Check if window was blocked
+                if (!oauthWindow) {
+                    alert('Please allow popups and try again');
+                    return;
+                }
+                
+                // Poll for OAuth completion
+                const checkOAuth = setInterval(() => {
+                    try {
+                        if (oauthWindow.closed) {
+                            clearInterval(checkOAuth);
+                            // Check if OAuth was successful by checking session
+                            checkOAuthStatus();
+                        }
+                    } catch (e) {
+                        // Cross-origin error, window might be closed
+                        clearInterval(checkOAuth);
+                    }
+                }, 1000);
+                
             } catch (error) {
                 console.error('❌ OAuth initiation failed:', error);
                 alert('OAuth initiation failed: ' + error.message);
+            }
+        }
+        
+        async function checkOAuthStatus() {
+            try {
+                const response = await fetch('/session');
+                const data = await response.json();
+                if (data.accessToken === 'present') {
+                    console.log('✅ OAuth completed, reloading page');
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('❌ Failed to check OAuth status:', error);
             }
         }
         
@@ -185,14 +235,7 @@ function serveMainAppUI(req, res, shop) {
         if (!${accessToken ? 'true' : 'false'}) {
             console.log('🔄 Auto-initiating OAuth flow...');
             setTimeout(() => {
-                // Direct redirect to Shopify OAuth
-                const oauthUrl = 'https://${shop}/admin/oauth/authorize?' +
-                    'client_id=${SHOPIFY_API_KEY}&' +
-                    'scope=${SHOPIFY_SCOPES}&' +
-                    'redirect_uri=${SHOPIFY_APP_URL}/auth/shopify/callback&' +
-                    'state=' + Math.random().toString(36).substring(7);
-                console.log('🔗 Auto-redirecting to Shopify OAuth:', oauthUrl);
-                window.location.href = oauthUrl;
+                initiateOAuth();
             }, 1000);
         }
     </script>

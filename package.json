@@ -6,7 +6,7 @@
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm ci && npm run build && cp -r dist ../",
     "preview": "cd frontend && npm run preview",
-    "start": "node backend/server-mock.js"
+    "start": "node backend/server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
