@@ -13,3 +13,5 @@ PORT = "3000"
 [build.environment]
 NIXPACKS_NODE_PACKAGE_MANAGER = "npm"
 NIXPACKS_NODE_INSTALL_CMD = "npm install"
+NIXPACKS_NODE_BUILD_CMD = "npm run build"
+NIXPACKS_NODE_START_CMD = "npm start"
