@@ -8,3 +8,8 @@ healthcheckTimeout = 60
 [deploy.environment]
 NODE_ENV = "production"
 PORT = "3000"
+
+# Build command: npm install thay vì npm ci
+[build.environment]
+NIXPACKS_NODE_PACKAGE_MANAGER = "npm"
+NIXPACKS_NODE_INSTALL_CMD = "npm install"
