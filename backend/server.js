@@ -143,6 +143,12 @@ app.get(['/app', '/'], (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
+// ---------- Catch-all route for frontend routing ----------
+app.get('*', (req, res) => {
+  // Serve index.html for all other routes to support frontend routing
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
 // ---------- API test (đã auth) ----------
 app.get('/api/me', (req, res) => {
   if (!req.session?.accessToken || !req.session?.shop) {
@@ -154,6 +160,95 @@ app.get('/api/me', (req, res) => {
     scopes: req.session.scopes,
     token: 'present'
   });
+});
+
+// ---------- Blog AI API routes ----------
+app.post('/generate', async (req, res) => {
+  try {
+    if (!req.session?.accessToken || !req.session?.shop) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const { prompt, type } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ error: 'Missing prompt parameter' });
+    }
+
+    // Mock AI generation for now
+    const generatedContent = {
+      title: `AI Generated: ${prompt}`,
+      content: `This is AI-generated content based on your prompt: "${prompt}". In a real implementation, this would call an AI service like OpenAI or similar.`,
+      type: type || 'blog_post',
+      timestamp: new Date().toISOString(),
+      shop: req.session.shop
+    };
+
+    res.json({
+      success: true,
+      data: generatedContent
+    });
+  } catch (error) {
+    console.error('Generate error:', error);
+    res.status(500).json({ error: 'Generation failed' });
+  }
+});
+
+app.get('/posts', async (req, res) => {
+  try {
+    if (!req.session?.accessToken || !req.session?.shop) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Mock posts data
+    const posts = [
+      {
+        id: 1,
+        title: 'Welcome to Blog AI',
+        content: 'This is your first AI-generated blog post.',
+        status: 'published',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 2,
+        title: 'Getting Started with AI Writing',
+        content: 'Learn how to use AI to create engaging content.',
+        status: 'draft',
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: posts
+    });
+  } catch (error) {
+    console.error('Posts error:', error);
+    res.status(500).json({ error: 'Failed to fetch posts' });
+  }
+});
+
+app.get('/settings', async (req, res) => {
+  try {
+    if (!req.session?.accessToken || !req.session?.shop) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const settings = {
+      shop: req.session.shop,
+      scopes: req.session.scopes,
+      apiKey: process.env.SHOPIFY_API_KEY,
+      appUrl: process.env.APP_URL
+    };
+
+    res.json({
+      success: true,
+      data: settings
+    });
+  } catch (error) {
+    console.error('Settings error:', error);
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
 });
 
 app.listen(PORT, () => {
