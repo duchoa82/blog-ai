@@ -55,7 +55,19 @@ const SHOPIFY_APP_URL = process.env.SHOPIFY_APP_URL || 'http://localhost:3000';
 
 // ===== Root Route - Serve Frontend or Shopify App =====
 app.get('/', (req, res) => {
-  const { hmac, host, shop, timestamp } = req.query;
+  const { hmac, host, shop, timestamp, redirect_count } = req.query;
+  
+  // Prevent infinite redirects
+  const currentRedirectCount = parseInt(redirect_count) || 0;
+  if (currentRedirectCount > 3) {
+    console.error('❌ Too many redirects detected, serving error page');
+    return res.status(500).send(`
+      <h1>Redirect Loop Detected</h1>
+      <p>Too many redirects. Please try again or contact support.</p>
+      <p>Shop: ${shop || 'unknown'}</p>
+      <p>Redirect count: ${currentRedirectCount}</p>
+    `);
+  }
 
   if (hmac && shop) {
     // Check if this is OAuth completion or initial app load
@@ -63,12 +75,17 @@ app.get('/', (req, res) => {
       // OAuth completed - serve main app UI
       console.log(`🎉 OAuth completed for shop: ${shop}, serving main app UI`);
       serveMainAppUI(req, res, shop);
+    } else if (hmac === 'oauth_completed') {
+      // OAuth completed but no access token - redirect to OAuth with counter
+      console.log(`🔄 OAuth completed but no access token, redirecting to OAuth for shop: ${shop}`);
+      const oauthUrl = `/auth/shopify?shop=${shop}&redirect_count=${currentRedirectCount + 1}`;
+      res.redirect(oauthUrl);
     } else {
-      // Initial Shopify app load - redirect to OAuth flow
+      // Initial Shopify app load - redirect to OAuth flow with counter
       console.log(`🔄 Shopify app load detected for shop: ${shop}`);
-      console.log(`🔄 Redirecting to OAuth flow...`);
+      console.log(`🔄 Redirecting to OAuth flow... (redirect count: ${currentRedirectCount})`);
       
-      const oauthUrl = `/auth/shopify?shop=${shop}`;
+      const oauthUrl = `/auth/shopify?shop=${shop}&redirect_count=${currentRedirectCount + 1}`;
       console.log(`🔗 Redirecting to: ${oauthUrl}`);
       res.redirect(oauthUrl);
     }
@@ -291,7 +308,7 @@ app.get('/auth/shopify/callback', async (req, res) => {
       }
       
       // Redirect to main app UI
-      const appUrl = `/?hmac=oauth_completed&shop=${shop}&host=admin.shopify.com&timestamp=${Date.now()}`;
+      const appUrl = `/?hmac=oauth_completed&shop=${shop}&host=admin.shopify.com&timestamp=${Date.now()}&redirect_count=0`;
       console.log(`🔄 Redirecting to main app UI: ${appUrl}`);
       res.redirect(appUrl);
     });
