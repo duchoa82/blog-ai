@@ -126,11 +126,13 @@ app.get('/auth/callback', async (req, res) => {
     req.session.scopes = tokenJson.scope;
     req.session.shop = shop;
 
-    // host param: nếu Shopify chưa truyền, tự dựng base64("shop/admin")
-    const hostParam = host || Buffer.from(`${shop}/admin`).toString('base64');
-
-    // Redirect vào FE (embedded) kèm host + shop —> App Bridge sẽ hoạt động
-    return res.redirect(`/app?shop=${encodeURIComponent(shop)}&host=${encodeURIComponent(hostParam)}`);
+    // ✅ FIX: Redirect về Shopify Admin thay vì Railway URL
+    const appHandle = 'enipa-ai-blog-writing-assist'; // Lấy từ Partner Dashboard
+    const storeName = shop.replace('.myshopify.com', '');
+    const adminUrl = `https://admin.shopify.com/store/${storeName}/apps/${appHandle}`;
+    
+    console.log(`🔄 OAuth completed, redirecting to: ${adminUrl}`);
+    return res.redirect(adminUrl);
   } catch (e) {
     console.error('OAuth callback error:', e);
     return res.status(500).send('OAuth callback error');
