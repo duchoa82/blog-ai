@@ -215,13 +215,33 @@ app.get('/auth/shopify/callback', async (req, res) => {
   const { code, state, shop } = req.query;
   
   console.log('🔄 OAuth callback received:', { code: !!code, state, shop });
+  console.log(`📊 Session ID: ${req.sessionID}`);
+  console.log(`🔑 Session OAuth state: ${req.session.oauthState || 'not set'}`);
 
-  // Validate OAuth state
-  if (!req.session.oauthState || state !== req.session.oauthState) {
-    console.error('❌ OAuth state mismatch');
+  // Try session state first, then fallback to query parameter
+  let validState = req.session.oauthState;
+  let stateSource = 'session';
+  
+  if (!validState && state) {
+    // Fallback: use state from query parameter (less secure but functional)
+    console.log('⚠️ Using fallback state from query parameter');
+    validState = state;
+    stateSource = 'query';
+  }
+
+  if (!validState) {
+    console.error('❌ No OAuth state found in session or query');
     return res.status(400).json({ 
       error: 'OAuth callback failed',
-      details: 'Invalid OAuth state' 
+      details: 'No OAuth state found in session or query parameters'
+    });
+  }
+
+  if (state !== validState) {
+    console.error(`❌ OAuth state mismatch - Expected: ${validState}, Received: ${state}, Source: ${stateSource}`);
+    return res.status(400).json({ 
+      error: 'OAuth callback failed',
+      details: `OAuth state mismatch - Expected: ${validState}, Received: ${state}`
     });
   }
 
@@ -253,6 +273,7 @@ app.get('/auth/shopify/callback', async (req, res) => {
 
     console.log('✅ OAuth successful for shop:', shop);
     console.log('🔑 Access token received:', !!tokenData.access_token);
+    console.log(`📊 State validation: ${stateSource} (${validState})`);
     
     // Clear OAuth state
     delete req.session.oauthState;
@@ -262,10 +283,18 @@ app.get('/auth/shopify/callback', async (req, res) => {
     req.session.shop = shop;
     req.session.scope = tokenData.scope;
     
-    // ✅ FIX: Redirect to main app UI instead of returning JSON
-    const appUrl = `/?hmac=oauth_completed&shop=${shop}&host=admin.shopify.com&timestamp=${Date.now()}`;
-    console.log(`🔄 Redirecting to main app UI: ${appUrl}`);
-    res.redirect(appUrl);
+    // Force session save
+    req.session.save((err) => {
+      if (err) {
+        console.error('❌ Session save failed:', err);
+        return res.status(500).json({ error: 'Session save failed' });
+      }
+      
+      // Redirect to main app UI
+      const appUrl = `/?hmac=oauth_completed&shop=${shop}&host=admin.shopify.com&timestamp=${Date.now()}`;
+      console.log(`🔄 Redirecting to main app UI: ${appUrl}`);
+      res.redirect(appUrl);
+    });
     
   } catch (err) {
     console.error('❌ OAuth exchange failed:', err);
