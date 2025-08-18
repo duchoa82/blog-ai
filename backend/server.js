@@ -39,7 +39,31 @@ const shopify = shopifyApp({
 
 // OAuth routes
 app.use("/auth", shopify.auth.begin());
-app.use("/auth/callback", shopify.auth.callback(), shopify.auth.redirect());
+app.use("/auth/callback", shopify.auth.callback());
+
+// Custom redirect after OAuth
+app.get("/auth/callback", async (req, res) => {
+  try {
+    // OAuth callback đã được xử lý bởi shopify.auth.callback()
+    // Bây giờ redirect về app với host parameter
+    const { shop, host } = req.query;
+    
+    if (shop && host) {
+      // Redirect về embedded app trong Shopify Admin
+      const storeName = shop.replace('.myshopify.com', '');
+      const adminUrl = `https://admin.shopify.com/store/${storeName}/apps/enipa-ai-blog-writing-assist?host=${encodeURIComponent(host)}&shop=${encodeURIComponent(shop)}`;
+      
+      console.log(`🔄 Redirecting to: ${adminUrl}`);
+      return res.redirect(adminUrl);
+    } else {
+      // Fallback redirect
+      res.redirect('/app');
+    }
+  } catch (error) {
+    console.error('❌ OAuth redirect failed:', error);
+    res.redirect('/app');
+  }
+});
 
 // Webhook verification
 app.post("/webhooks", express.raw({ type: "application/json" }), shopify.webhooks.process());
