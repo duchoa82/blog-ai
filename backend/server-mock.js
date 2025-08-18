@@ -53,42 +53,15 @@ const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET || 'mock-api-secret';
 const SHOPIFY_SCOPES = process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_content,write_content';
 const SHOPIFY_APP_URL = process.env.SHOPIFY_APP_URL || 'http://localhost:3000';
 
-// ===== Root Route - Serve Frontend or Shopify App =====
+// ===== Root Route - Simple logic to avoid redirect loops =====
 app.get('/', (req, res) => {
-  const { hmac, host, shop, timestamp, redirect_count } = req.query;
-  
-  // Prevent infinite redirects
-  const currentRedirectCount = parseInt(redirect_count) || 0;
-  if (currentRedirectCount > 3) {
-    console.error('❌ Too many redirects detected, serving error page');
-    return res.status(500).send(`
-      <h1>Redirect Loop Detected</h1>
-      <p>Too many redirects. Please try again or contact support.</p>
-      <p>Shop: ${shop || 'unknown'}</p>
-      <p>Redirect count: ${currentRedirectCount}</p>
-    `);
-  }
+  const { hmac, host, shop, timestamp } = req.query;
 
   if (hmac && shop) {
-    // Check if this is OAuth completion or initial app load
-    if (hmac === 'oauth_completed' && req.session.accessToken) {
-      // OAuth completed - serve main app UI
-      console.log(`🎉 OAuth completed for shop: ${shop}, serving main app UI`);
-      serveMainAppUI(req, res, shop);
-    } else if (hmac === 'oauth_completed') {
-      // OAuth completed but no access token - redirect to OAuth with counter
-      console.log(`🔄 OAuth completed but no access token, redirecting to OAuth for shop: ${shop}`);
-      const oauthUrl = `/auth/shopify?shop=${shop}&redirect_count=${currentRedirectCount + 1}`;
-      res.redirect(oauthUrl);
-    } else {
-      // Initial Shopify app load - redirect to OAuth flow with counter
-      console.log(`🔄 Shopify app load detected for shop: ${shop}`);
-      console.log(`🔄 Redirecting to OAuth flow... (redirect count: ${currentRedirectCount})`);
-      
-      const oauthUrl = `/auth/shopify?shop=${shop}&redirect_count=${currentRedirectCount + 1}`;
-      console.log(`🔗 Redirecting to: ${oauthUrl}`);
-      res.redirect(oauthUrl);
-    }
+    // Always serve the main app UI for Shopify app loads
+    // Let the frontend handle OAuth flow if needed
+    console.log(`🔄 Shopify app load for shop: ${shop}, serving main app UI`);
+    serveMainAppUI(req, res, shop);
   } else {
     // Direct access - serve frontend HTML
     console.log('🔄 Serving frontend for direct access');
@@ -118,6 +91,7 @@ function serveMainAppUI(req, res, shop) {
         .btn { background: #004c3f; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin: 5px; }
         .btn:hover { background: #065f46; }
         .token-info { background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .oauth-section { background: #dbeafe; border: 1px solid #3b82f6; padding: 15px; border-radius: 6px; margin: 20px 0; }
     </style>
 </head>
 <body>
@@ -125,24 +99,33 @@ function serveMainAppUI(req, res, shop) {
         <h1>🚀 Blog AI - Shopify App</h1>
         
         <div class="status">
-            <strong>✅ App Status:</strong> Successfully installed and authenticated!
+            <strong>✅ App Status:</strong> Successfully loaded in Shopify Admin
         </div>
         
         <div class="shop-info">
             <strong>🏪 Shop:</strong> ${shop}<br>
             <strong>🔑 API Key:</strong> ${SHOPIFY_API_KEY}<br>
-            <strong>📋 Scopes:</strong> ${scope}<br>
-            <strong>⏰ Installed at:</strong> ${new Date().toISOString()}
+            <strong>📋 Scopes:</strong> ${SHOPIFY_SCOPES}<br>
+            <strong>⏰ Loaded at:</strong> ${new Date().toISOString()}
         </div>
         
+        ${accessToken ? `
         <div class="token-info">
-            <strong>🔐 Access Token:</strong> ${accessToken ? '✅ Present' : '❌ Missing'}<br>
-            <strong>🔒 Token Status:</strong> ${accessToken ? 'Valid' : 'Invalid'}
+            <strong>🔐 Access Token:</strong> ✅ Present<br>
+            <strong>🔒 Token Status:</strong> Valid<br>
+            <strong>📋 Granted Scopes:</strong> ${scope || 'N/A'}
         </div>
+        ` : `
+        <div class="oauth-section">
+            <strong>🔐 OAuth Status:</strong> Not authenticated yet<br>
+            <strong>📋 Required Scopes:</strong> ${SHOPIFY_SCOPES}<br>
+            <button class="btn" onclick="initiateOAuth()">🔑 Start OAuth Flow</button>
+        </div>
+        `}
         
         <h3>🎯 Next Steps:</h3>
         <ul>
-            <li>✅ OAuth flow completed</li>
+            <li>${accessToken ? '✅ OAuth flow completed' : '⏳ OAuth flow pending'}</li>
             <li>🔧 Configure app settings</li>
             <li>📝 Start creating blog content</li>
             <li>🚀 Deploy AI features</li>
@@ -151,6 +134,7 @@ function serveMainAppUI(req, res, shop) {
         <button class="btn" onclick="testAPI()">🧪 Test Backend API</button>
         <button class="btn" onclick="window.location.href='/healthz'">🔍 Health Check</button>
         <button class="btn" onclick="window.location.href='/session'">📊 Session Info</button>
+        ${!accessToken ? `<button class="btn" onclick="initiateOAuth()">🔄 Retry OAuth</button>` : ''}
         
         <div id="api-result" style="margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 6px; display: none;"></div>
     </div>
@@ -168,6 +152,18 @@ function serveMainAppUI(req, res, shop) {
             console.error('❌ App Bridge error:', error);
         }
         
+        async function initiateOAuth() {
+            try {
+                console.log('🔄 Initiating OAuth flow...');
+                const oauthUrl = '/auth/shopify?shop=${shop}';
+                console.log('🔗 Redirecting to:', oauthUrl);
+                window.location.href = oauthUrl;
+            } catch (error) {
+                console.error('❌ OAuth initiation failed:', error);
+                alert('OAuth initiation failed: ' + error.message);
+            }
+        }
+        
         async function testAPI() {
             try {
                 const response = await fetch('/test');
@@ -178,6 +174,14 @@ function serveMainAppUI(req, res, shop) {
                 document.getElementById('api-result').innerHTML = '<strong>API Error:</strong><br>' + error.message;
                 document.getElementById('api-result').style.display = 'block';
             }
+        }
+        
+        // Auto-initiate OAuth if not authenticated
+        if (!${accessToken ? 'true' : 'false'}) {
+            console.log('🔄 Auto-initiating OAuth flow...');
+            setTimeout(() => {
+                initiateOAuth();
+            }, 1000);
         }
     </script>
 </body>
