@@ -73,8 +73,14 @@ export interface ShopifyProductOption {
   values: string[];
 }
 
-// Fetch all products from Shopify Storefront API
+// ✅ FIX: Disable Storefront API calls tạm thời để fix navigation
 export const fetchShopifyProducts = async (): Promise<ShopifyProduct[]> => {
+  // Temporarily disable Storefront API to fix navigation issues
+  console.log('📝 Using mock data temporarily to fix navigation');
+  return mockApiResponse(mockShopifyProducts);
+  
+  // TODO: Re-enable when Storefront API permissions are fixed
+  /*
   if (isDevelopment) {
     devLog('Using mock Shopify products for development');
     return mockApiResponse(mockShopifyProducts);
@@ -139,10 +145,21 @@ export const fetchShopifyProducts = async (): Promise<ShopifyProduct[]> => {
     console.warn('⚠️ Falling back to mock data due to API failure');
     return mockApiResponse(mockShopifyProducts);
   }
+  */
 };
 
-// Fetch single product by ID
+// ✅ FIX: Disable Storefront API calls tạm thời
 export const fetchShopifyProduct = async (productId: number): Promise<ShopifyProduct> => {
+  // Temporarily disable Storefront API to fix navigation issues
+  console.log('📝 Using mock data temporarily to fix navigation');
+  const mockProduct = mockShopifyProducts.find(p => p.id === productId);
+  if (!mockProduct) {
+    throw new Error('Product not found');
+  }
+  return mockProduct;
+  
+  // TODO: Re-enable when Storefront API permissions are fixed
+  /*
   try {
     const shop = detectShop();
     
@@ -176,6 +193,7 @@ export const fetchShopifyProduct = async (productId: number): Promise<ShopifyPro
     console.error('Error fetching Shopify product:', error);
     throw error;
   }
+  */
 };
 
 // Search products

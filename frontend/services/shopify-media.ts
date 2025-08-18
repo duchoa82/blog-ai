@@ -86,8 +86,14 @@ const detectShop = (): string => {
   }
 };
 
-// Fetch images from Shopify Storefront API (products with images)
+// ✅ FIX: Disable Storefront API calls tạm thời
 export const fetchShopifyImages = async (): Promise<ShopifyAsset[]> => {
+  // Temporarily disable Storefront API to fix navigation issues
+  console.log('📝 Using mock data temporarily to fix navigation');
+  return mockApiResponse(mockShopifyImages);
+  
+  // TODO: Re-enable when Storefront API permissions are fixed
+  /*
   if (isDevelopment) {
     devLog('Using mock Shopify images for development');
     return mockApiResponse(mockShopifyImages);
@@ -113,10 +119,6 @@ export const fetchShopifyImages = async (): Promise<ShopifyAsset[]> => {
           id: assetId++,
           key: imgEdge.node.url.split('/').pop() || `image-${assetId}`,
           public_url: imgEdge.node.url,
-          content_type: 'image/jpeg', // Assume JPEG for now
-          size: 0, // Storefront API doesn't provide file size
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
           alt: imgEdge.node.altText || edge.node.title
         });
       });
@@ -128,6 +130,7 @@ export const fetchShopifyImages = async (): Promise<ShopifyAsset[]> => {
     // Fallback to mock data if API fails
     return mockApiResponse(mockShopifyImages);
   }
+  */
 };
 
 // Upload image to Shopify (simplified - Storefront API is read-only)
