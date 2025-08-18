@@ -1,12 +1,12 @@
-// server.js - Clean Shopify OAuth + Embedded App
+// server-new.js - Shopify SDK + Full OAuth + Session Storage
 import express from 'express';
-import session from 'express-session';
-import cors from 'cors';
 import dotenv from 'dotenv';
+import cors from 'cors';
+import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
+import Redis from 'ioredis';
+import { RedisSessionStorage } from '@shopify/shopify-app-session-storage-redis';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import crypto from 'crypto';
-import fetch from 'node-fetch';
 
 dotenv.config();
 
@@ -15,247 +15,240 @@ const PORT = process.env.PORT || 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ---------- basic middlewares ----------
+// ---------- Middleware ----------
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
-// ---------- session (MemoryStore OK lúc đầu; prod thì dùng Redis) ----------
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'keyboard cat',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000
-  }
-}));
-
-// ---------- CSP để cho phép embed trong Shopify Admin ----------
-app.use((req, res, next) => {
-  res.setHeader(
-    'Content-Security-Policy',
-    "frame-ancestors https://*.myshopify.com https://admin.shopify.com;"
-  );
-  // KHÔNG đặt X-Frame-Options: DENY. Nếu muốn, có thể bỏ luôn header này.
-  next();
+// ---------- Shopify API Setup ----------
+const shopify = shopifyApi({
+  apiKey: process.env.SHOPIFY_API_KEY,
+  apiSecretKey: process.env.SHOPIFY_API_SECRET,
+  scopes: process.env.SHOPIFY_SCOPES?.split(',') || ['write_products', 'write_content'],
+  hostName: process.env.APP_URL?.replace(/^https?:\/\//, '') || 'blog-shopify-production.up.railway.app',
+  apiVersion: LATEST_API_VERSION,
+  isEmbeddedApp: true,
+  // Session storage sẽ được set sau khi Redis connect
 });
 
-// ---------- serve FE (dist/) ----------
+// ---------- Redis Setup ----------
+let redis;
+let sessionStorage;
+
+async function setupRedis() {
+  try {
+    if (process.env.REDIS_URL) {
+      redis = new Redis(process.env.REDIS_URL);
+      sessionStorage = new RedisSessionStorage(redis);
+      shopify.config.sessionStorage = sessionStorage;
+      console.log('✅ Redis session storage connected');
+    } else {
+      console.log('⚠️ No REDIS_URL, using memory storage');
+    }
+  } catch (error) {
+    console.error('❌ Redis connection failed:', error);
+    console.log('⚠️ Falling back to memory storage');
+  }
+}
+
+// ---------- Serve Frontend ----------
 const frontendPath = path.join(__dirname, '../frontend/dist');
 app.use(express.static(frontendPath));
 
-// ---------- health ----------
-app.get('/healthz', (_, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+// ---------- Health Check ----------
+app.get('/healthz', (_, res) => res.json({ 
+  status: 'ok', 
+  time: new Date().toISOString(),
+  shopify: 'configured',
+  redis: !!redis
+}));
 
-// ---------- helper ----------
-function buildInstallUrl({ shop, state }) {
-  const params = new URLSearchParams({
-    client_id: process.env.SHOPIFY_API_KEY,
-    scope: process.env.SHOPIFY_SCOPES,
-    redirect_uri: `${process.env.APP_URL}/auth/callback`,
-    state
-  });
-  return `https://${shop}/admin/oauth/authorize?${params.toString()}`;
-}
+// ---------- Step 1: Bắt đầu OAuth ----------
+app.get('/auth', async (req, res) => {
+  try {
+    const { shop, host } = req.query;
+    
+    if (!shop) {
+      return res.status(400).json({ error: 'Missing shop parameter' });
+    }
 
-function verifyHmac(query) {
-  const { hmac, ...rest } = query;
-  const message = Object.keys(rest)
-    .sort()
-    .map(k => `${k}=${Array.isArray(rest[k]) ? rest[k].join(',') : rest[k]}`)
-    .join('&');
+    // Lưu host để forward qua callback
+    req.session = req.session || {};
+    req.session.oauthHost = host;
 
-  const digest = crypto
-    .createHmac('sha256', process.env.SHOPIFY_API_SECRET)
-    .update(message)
-    .digest('hex');
+    console.log(`🚀 Starting OAuth for shop: ${shop}, host: ${host}`);
 
-  return crypto.timingSafeEqual(Buffer.from(digest, 'utf-8'), Buffer.from(hmac, 'utf-8'));
-}
+    const authRoute = await shopify.auth.begin({
+      shop,
+      callbackPath: '/auth/callback',
+      isOnline: false,
+      rawRequest: req,
+      rawResponse: res,
+    });
 
-// ---------- 1) bắt đầu OAuth ----------
-app.get('/auth', (req, res) => {
-  const shop = (req.query.shop || '').toString();
-  if (!shop.endsWith('.myshopify.com')) {
-    return res.status(400).json({ error: 'Missing or invalid shop (your-shop.myshopify.com)' });
+    return res.redirect(authRoute);
+  } catch (error) {
+    console.error('❌ OAuth initiation failed:', error);
+    res.status(500).json({ error: 'OAuth initiation failed' });
   }
-
-  const state = crypto.randomBytes(16).toString('hex');
-  req.session.state = state;
-  req.session.shop = shop;
-
-  const url = buildInstallUrl({ shop, state });
-  return res.redirect(url);
 });
 
-// ---------- 2) callback: verify + lấy access_token + redirect vào app ----------
+// ---------- Step 2: OAuth Callback ----------
 app.get('/auth/callback', async (req, res) => {
   try {
-    const { shop, hmac, state, code, host } = req.query;
+    console.log('🔄 OAuth callback received:', req.query);
 
-    if (!shop || !hmac || !state || !code) {
-      return res.status(400).send('Missing required OAuth params');
-    }
-    if (!req.session.state || state !== req.session.state) {
-      return res.status(400).send('Invalid state');
-    }
-    if (!verifyHmac(req.query)) {
-      return res.status(400).send('Invalid HMAC');
-    }
-
-    // exchange code -> token
-    const tokenResp = await fetch(`https://${shop}/admin/oauth/access_token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: process.env.SHOPIFY_API_KEY,
-        client_secret: process.env.SHOPIFY_API_SECRET,
-        code
-      })
+    const session = await shopify.auth.callback({
+      rawRequest: req,
+      rawResponse: res,
     });
 
-    if (!tokenResp.ok) {
-      const text = await tokenResp.text();
-      console.error('Access token exchange failed:', text);
-      return res.status(500).send('Token exchange failed');
-    }
-    const tokenJson = await tokenResp.json();
-    // Lưu session tối thiểu
-    req.session.accessToken = tokenJson.access_token;
-    req.session.scopes = tokenJson.scope;
-    req.session.shop = shop;
+    console.log('✅ OAuth successful for shop:', session.shop);
 
-    // ✅ FIX: Redirect về Shopify Admin với host và shop parameters
-    const appHandle = 'enipa-ai-blog-writing-assist';
-    const storeName = shop.replace('.myshopify.com', '');
-    const adminUrl = `https://admin.shopify.com/store/${storeName}/apps/${appHandle}?host=${encodeURIComponent(host)}&shop=${encodeURIComponent(shop)}`;
+    // Lấy host từ session (đã lưu ở step 1)
+    const oauthHost = req.session?.oauthHost;
     
-    console.log(`🔄 OAuth completed, redirecting to: ${adminUrl}`);
+    if (!oauthHost) {
+      console.error('❌ Missing oauthHost in session');
+      return res.status(500).send('OAuth host missing');
+    }
+
+    // Redirect về embedded app trong Shopify Admin
+    const storeName = session.shop.replace('.myshopify.com', '');
+    const adminUrl = `https://admin.shopify.com/store/${storeName}/apps/enipa-ai-blog-writing-assist?host=${encodeURIComponent(oauthHost)}&shop=${encodeURIComponent(session.shop)}`;
+    
+    console.log(`🔄 Redirecting to: ${adminUrl}`);
     return res.redirect(adminUrl);
-  } catch (e) {
-    console.error('OAuth callback error:', e);
-    return res.status(500).send('OAuth callback error');
-  }
-});
-
-// ---------- trang app (embedded) ----------
-app.get(['/app', '/'], (req, res) => {
-  // Nếu được gọi từ Admin (có host/hmac) -> cứ trả index.html (App Bridge sẽ forceRedirect nếu cần)
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
-
-// ---------- Catch-all route for frontend routing ----------
-app.get('*', (req, res) => {
-  // Serve index.html for all other routes to support frontend routing
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
-
-// ---------- API test (đã auth) ----------
-app.get('/api/me', (req, res) => {
-  if (!req.session?.accessToken || !req.session?.shop) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  res.json({
-    ok: true,
-    shop: req.session.shop,
-    scopes: req.session.scopes,
-    token: 'present'
-  });
-});
-
-// ---------- Blog AI API routes ----------
-app.post('/generate', async (req, res) => {
-  try {
-    if (!req.session?.accessToken || !req.session?.shop) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-
-    const { prompt, type } = req.body;
-    
-    if (!prompt) {
-      return res.status(400).json({ error: 'Missing prompt parameter' });
-    }
-
-    // Mock AI generation for now
-    const generatedContent = {
-      title: `AI Generated: ${prompt}`,
-      content: `This is AI-generated content based on your prompt: "${prompt}". In a real implementation, this would call an AI service like OpenAI or similar.`,
-      type: type || 'blog_post',
-      timestamp: new Date().toISOString(),
-      shop: req.session.shop
-    };
-
-    res.json({
-      success: true,
-      data: generatedContent
-    });
   } catch (error) {
-    console.error('Generate error:', error);
-    res.status(500).json({ error: 'Generation failed' });
+    console.error('❌ OAuth callback failed:', error);
+    res.status(500).send('OAuth callback failed');
   }
 });
 
-app.get('/posts', async (req, res) => {
+// ---------- Shopify REST API ----------
+app.get('/api/products', async (req, res) => {
   try {
-    if (!req.session?.accessToken || !req.session?.shop) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    const { shop } = req.query;
+    
+    if (!shop) {
+      return res.status(400).json({ error: 'Missing shop parameter' });
     }
 
-    // Mock posts data
-    const posts = [
-      {
-        id: 1,
-        title: 'Welcome to Blog AI',
-        content: 'This is your first AI-generated blog post.',
-        status: 'published',
-        createdAt: new Date().toISOString()
+    // Lấy session từ storage
+    let session;
+    if (sessionStorage) {
+      session = await sessionStorage.loadSession(shop);
+    } else {
+      // Fallback to memory (không recommended cho production)
+      return res.status(500).json({ error: 'Session storage not available' });
+    }
+
+    if (!session || !session.accessToken) {
+      return res.status(401).json({ error: 'App not installed or token expired' });
+    }
+
+    const client = new shopify.clients.Rest({
+      session: {
+        shop,
+        accessToken: session.accessToken,
       },
-      {
-        id: 2,
-        title: 'Getting Started with AI Writing',
-        content: 'Learn how to use AI to create engaging content.',
-        status: 'draft',
-        createdAt: new Date().toISOString()
-      }
-    ];
-    
-    res.json({ 
-      success: true, 
-      data: posts
     });
+
+    const products = await client.get({
+      path: 'products',
+      query: { limit: 10 },
+    });
+
+    res.json(products.body);
   } catch (error) {
-    console.error('Posts error:', error);
-    res.status(500).json({ error: 'Failed to fetch posts' });
+    console.error('❌ Products API error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.get('/settings', async (req, res) => {
+// ---------- Shopify GraphQL API ----------
+app.get('/api/shop-data', async (req, res) => {
   try {
-    if (!req.session?.accessToken || !req.session?.shop) {
-      return res.status(401).json({ error: 'Not authenticated' });
+    const { shop } = req.query;
+    
+    if (!shop) {
+      return res.status(400).json({ error: 'Missing shop parameter' });
     }
 
-    const settings = {
-      shop: req.session.shop,
-      scopes: req.session.scopes,
-      apiKey: process.env.SHOPIFY_API_KEY,
-      appUrl: process.env.APP_URL
-    };
+    // Lấy session từ storage
+    let session;
+    if (sessionStorage) {
+      session = await sessionStorage.loadSession(shop);
+    } else {
+      return res.status(500).json({ error: 'Session storage not available' });
+    }
 
-    res.json({
-      success: true,
-      data: settings
+    if (!session || !session.accessToken) {
+      return res.status(401).json({ error: 'App not installed or token expired' });
+    }
+
+    const client = new shopify.clients.Graphql({
+      session: { shop, accessToken: session.accessToken },
     });
+
+    const query = `#graphql
+      {
+        shop {
+          name
+          email
+          myshopifyDomain
+        }
+        products(first: 5) {
+          edges {
+            node {
+              id
+              title
+              status
+              handle
+            }
+          }
+        }
+        blogs(first: 3) {
+          edges {
+            node {
+              id
+              title
+              handle
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await client.query({ data: query });
+    res.json(response.body.data);
   } catch (error) {
-    console.error('Settings error:', error);
-    res.status(500).json({ error: 'Failed to fetch settings' });
+    console.error('❌ GraphQL API error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Backend running on port ${PORT}`);
-  console.log(`🔍 Healthcheck: http://localhost:${PORT}/healthz`);
-  console.log(`🔐 OAuth: http://localhost:${PORT}/auth?shop=your-shop.myshopify.com`);
-  console.log(`🌐 App: http://localhost:${PORT}/app`);
+// ---------- App Routes ----------
+app.get(['/app', '/'], (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
+
+// ---------- Catch-all for frontend routing ----------
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
+// ---------- Start Server ----------
+async function startServer() {
+  await setupRedis();
+  
+  app.listen(PORT, () => {
+    console.log(`🚀 Backend running on port ${PORT}`);
+    console.log(`🔍 Healthcheck: http://localhost:${PORT}/healthz`);
+    console.log(`🔐 OAuth: http://localhost:${PORT}/auth?shop=your-shop.myshopify.com`);
+    console.log(`🌐 App: http://localhost:${PORT}/app`);
+    console.log(`📦 Shopify SDK: ${shopify.config.apiVersion}`);
+    console.log(`💾 Session Storage: ${sessionStorage ? 'Redis' : 'Memory'}`);
+  });
+}
+
+startServer().catch(console.error);
