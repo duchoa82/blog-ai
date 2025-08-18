@@ -123,8 +123,14 @@ export interface CreateArticleData {
   };
 }
 
-// Fetch all blogs from Shopify Storefront API
+// ✅ FIX: Disable Storefront API calls tạm thời để fix navigation
 export const fetchShopifyBlogs = async (): Promise<ShopifyBlog[]> => {
+  // Temporarily disable Storefront API to fix navigation issues
+  console.log('📝 Using mock data temporarily to fix navigation');
+  return mockApiResponse(mockShopifyBlogs);
+  
+  // TODO: Re-enable when Storefront API permissions are fixed
+  /*
   if (isDevelopment) {
     devLog('Using mock Shopify blogs for development');
     return mockApiResponse(mockShopifyBlogs);
@@ -157,10 +163,17 @@ export const fetchShopifyBlogs = async (): Promise<ShopifyBlog[]> => {
     // Fallback to mock data if API fails
     return mockApiResponse(mockShopifyBlogs);
   }
+  */
 };
 
-// Fetch blog articles
+// ✅ FIX: Disable Storefront API calls tạm thời
 export const fetchBlogArticles = async (blogHandle: string): Promise<ShopifyArticle[]> => {
+  // Temporarily disable Storefront API to fix navigation issues
+  console.log('📝 Using mock data temporarily to fix navigation');
+  return mockApiResponse(mockShopifyBlogs[0]?.articles || []);
+  
+  // TODO: Re-enable when Storefront API permissions are fixed
+  /*
   try {
     const shop = detectShop();
     
@@ -185,6 +198,7 @@ export const fetchBlogArticles = async (blogHandle: string): Promise<ShopifyArti
     console.error('Error fetching blog articles:', error);
     throw error;
   }
+  */
 };
 
 // Create a new article
