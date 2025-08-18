@@ -1,22 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { AppBridgeProvider, useAppBridge } from '@shopify/app-bridge-react';
+import { AppBridgeProvider, useAppBridge, TitleBar } from '@shopify/app-bridge-react';
 import { Provider as PolarisProvider, Page, Layout, Card, Button, TextContainer, Heading } from '@shopify/polaris';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AppNavigation } from './components/AppNavigation';
-import { DashboardPage } from './pages/DashboardPage';
-import { PostsPage } from './pages/PostsPage';
-import { CreatePage } from './pages/CreatePage';
-import { ProductsPage } from './pages/ProductsPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { SettingsPage } from './pages/SettingsPage';
 import '@shopify/polaris/build/esm/styles.css';
 
-// ✅ FIX: App Bridge configuration với isEmbedded
+// ✅ App Bridge configuration với host parameter
 const config = {
   apiKey: import.meta.env.VITE_SHOPIFY_API_KEY || '98d5cae75b3fdce1011668a7b6bdc8e2',
   host: new URLSearchParams(window.location.search).get('host') || '',
   forceRedirect: true,
-  isEmbedded: true, // Bắt buộc để app chạy trong iframe
+  isEmbedded: true,
 };
 
 function AppContent() {
@@ -25,63 +17,75 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ✅ FIX: Kiểm tra app có đang chạy trong Shopify Admin iframe không
+    // Lấy shop và host từ URL parameters
     const params = new URLSearchParams(window.location.search);
     const shop = params.get('shop');
     const host = params.get('host');
-    const hmac = params.get('hmac');
-
-    // Nếu không có host/hmac → app đang mở ngoài iframe → redirect về Admin
-    if (!host || !hmac) {
-      console.log('⚠️ App opened outside iframe, redirecting to Shopify Admin...');
-      const currentShop = shop || 'your-shop';
-      const adminUrl = `https://admin.shopify.com/store/${currentShop.replace('.myshopify.com', '')}/apps/enipa-ai-blog-writing-assist`;
-      window.location.href = adminUrl;
-      return;
-    }
 
     if (shop && host) {
       setShopInfo({ shop, host });
+      console.log('✅ App Bridge initialized with:', { shop, host });
     }
     setLoading(false);
   }, []);
 
   useEffect(() => {
     if (app && shopInfo) {
-      // Register navigation with Shopify Admin
-      app.dispatch(
-        app.actions.Navigation.setTopBar({
-          title: 'Blog AI',
-          buttons: {
-            primary: {
-              label: 'Create Post',
-              onClick: () => {
-                console.log('Create Post clicked');
+      console.log('🚀 Setting up App Bridge navigation...');
+      
+      try {
+        // Set up top bar
+        app.dispatch(
+          app.actions.Navigation.setTopBar({
+            title: 'ENIPA AI Blog Writing Assist',
+            buttons: {
+              primary: {
+                label: 'Create Post',
+                onClick: () => {
+                  console.log('Create Post clicked');
+                },
               },
             },
-          },
-        })
-      );
+          })
+        );
+        console.log('✅ Top bar set successfully');
 
-      // Set up navigation menu
-      app.dispatch(
-        app.actions.Navigation.setMenu({
-          items: [
-            {
-              label: 'Dashboard',
-              destination: '/',
-            },
-            {
-              label: 'Blog Posts',
-              destination: '/posts',
-            },
-            {
-              label: 'Settings',
-              destination: '/settings',
-            },
-          ],
-        })
-      );
+        // Set up navigation menu (sidebar)
+        app.dispatch(
+          app.actions.Navigation.setMenu({
+            items: [
+              {
+                label: 'Dashboard',
+                destination: '/',
+              },
+              {
+                label: 'Blog Posts',
+                destination: '/posts',
+              },
+              {
+                label: 'Create Post',
+                destination: '/create',
+              },
+              {
+                label: 'Products',
+                destination: '/products',
+              },
+              {
+                label: 'Analytics',
+                destination: '/analytics',
+              },
+              {
+                label: 'Settings',
+                destination: '/settings',
+              },
+            ],
+          })
+        );
+        console.log('✅ Navigation menu set successfully');
+
+      } catch (error) {
+        console.error('❌ Failed to set up navigation:', error);
+      }
     }
   }, [app, shopInfo]);
 
@@ -93,6 +97,7 @@ function AppContent() {
             <Card>
               <TextContainer>
                 <Heading>Loading...</Heading>
+                <p>Setting up Blog AI navigation...</p>
               </TextContainer>
             </Card>
           </Layout.Section>
@@ -102,34 +107,39 @@ function AppContent() {
   }
 
   return (
-    <Page title="Blog AI Dashboard">
-      <Layout>
-        <Layout.Section>
-          <Card>
-            <TextContainer>
-              <Heading>Welcome to Blog AI!</Heading>
-              <p>Your AI-powered blog writing assistant for Shopify.</p>
-              {shopInfo && (
-                <div>
-                  <p><strong>Shop:</strong> {shopInfo.shop}</p>
-                  <p><strong>Host:</strong> {shopInfo.host}</p>
-                </div>
-              )}
-            </TextContainer>
-          </Card>
-        </Layout.Section>
-        
-        <Layout.Section secondary>
-          <Card>
-            <TextContainer>
-              <Heading>Quick Actions</Heading>
-              <Button primary fullWidth>Create New Post</Button>
-              <Button fullWidth style={{ marginTop: '1rem' }}>View Analytics</Button>
-            </TextContainer>
-          </Card>
-        </Layout.Section>
-      </Layout>
-    </Page>
+    <>
+      {/* ✅ TitleBar để hiện title trong Shopify Admin */}
+      <TitleBar title="ENIPA AI Blog Writing Assist" />
+      
+      <Page title="Blog AI Dashboard">
+        <Layout>
+          <Layout.Section>
+            <Card>
+              <TextContainer>
+                <Heading>Welcome to Blog AI!</Heading>
+                <p>Your AI-powered blog writing assistant for Shopify.</p>
+                {shopInfo && (
+                  <div>
+                    <p><strong>Shop:</strong> {shopInfo.shop}</p>
+                    <p><strong>Host:</strong> {shopInfo.host}</p>
+                  </div>
+                )}
+              </TextContainer>
+            </Card>
+          </Layout.Section>
+          
+          <Layout.Section secondary>
+            <Card>
+              <TextContainer>
+                <Heading>Quick Actions</Heading>
+                <Button primary fullWidth>Create New Post</Button>
+                <Button fullWidth style={{ marginTop: '1rem' }}>View Analytics</Button>
+              </TextContainer>
+            </Card>
+          </Layout.Section>
+        </Layout>
+      </Page>
+    </>
   );
 }
 
@@ -137,21 +147,7 @@ function App() {
   return (
     <PolarisProvider>
       <AppBridgeProvider config={config}>
-        <Router>
-          <div style={{ display: 'flex' }}>
-            <AppNavigation shop={new URLSearchParams(window.location.search).get('shop') || undefined} />
-            <div style={{ marginLeft: '240px', width: 'calc(100vw - 240px)' }}>
-              <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/posts" element={<PostsPage />} />
-                <Route path="/create" element={<CreatePage />} />
-                <Route path="/products" element={<ProductsPage />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-              </Routes>
-            </div>
-          </div>
-        </Router>
+        <AppContent />
       </AppBridgeProvider>
     </PolarisProvider>
   );
