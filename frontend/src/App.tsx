@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { AppBridgeProvider, useAppBridge } from '@shopify/app-bridge-react';
 import { Provider as PolarisProvider, Page, Layout, Card, Button, TextContainer, Heading } from '@shopify/polaris';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AppNavigation } from './components/AppNavigation';
+import { DashboardPage } from './pages/DashboardPage';
+import { PostsPage } from './pages/PostsPage';
+import { CreatePage } from './pages/CreatePage';
+import { ProductsPage } from './pages/ProductsPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
+import { SettingsPage } from './pages/SettingsPage';
 import '@shopify/polaris/build/esm/styles.css';
 
 // ✅ FIX: App Bridge configuration với isEmbedded
@@ -129,7 +137,21 @@ function App() {
   return (
     <PolarisProvider>
       <AppBridgeProvider config={config}>
-        <AppContent />
+        <Router>
+          <div style={{ display: 'flex' }}>
+            <AppNavigation shop={new URLSearchParams(window.location.search).get('shop') || undefined} />
+            <div style={{ marginLeft: '240px', width: 'calc(100vw - 240px)' }}>
+              <Routes>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/posts" element={<PostsPage />} />
+                <Route path="/create" element={<CreatePage />} />
+                <Route path="/products" element={<ProductsPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Routes>
+            </div>
+          </div>
+        </Router>
       </AppBridgeProvider>
     </PolarisProvider>
   );
