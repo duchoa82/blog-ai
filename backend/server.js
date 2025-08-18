@@ -126,10 +126,10 @@ app.get('/auth/callback', async (req, res) => {
     req.session.scopes = tokenJson.scope;
     req.session.shop = shop;
 
-    // ✅ FIX: Redirect về Shopify Admin thay vì Railway URL
-    const appHandle = 'enipa-ai-blog-writing-assist'; // Lấy từ Partner Dashboard
+    // ✅ FIX: Redirect về Shopify Admin với host và shop parameters
+    const appHandle = 'enipa-ai-blog-writing-assist';
     const storeName = shop.replace('.myshopify.com', '');
-    const adminUrl = `https://admin.shopify.com/store/${storeName}/apps/${appHandle}`;
+    const adminUrl = `https://admin.shopify.com/store/${storeName}/apps/${appHandle}?host=${encodeURIComponent(host)}&shop=${encodeURIComponent(shop)}`;
     
     console.log(`🔄 OAuth completed, redirecting to: ${adminUrl}`);
     return res.redirect(adminUrl);
@@ -219,9 +219,9 @@ app.get('/posts', async (req, res) => {
         createdAt: new Date().toISOString()
       }
     ];
-
-    res.json({
-      success: true,
+    
+    res.json({ 
+      success: true, 
       data: posts
     });
   } catch (error) {
