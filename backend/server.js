@@ -42,7 +42,8 @@ app.use((req, res, next) => {
 });
 
 // ---------- serve FE (dist/) ----------
-app.use(express.static(path.join(__dirname, 'dist')));
+const frontendPath = path.join(__dirname, '../frontend/dist');
+app.use(express.static(frontendPath));
 
 // ---------- health ----------
 app.get('/healthz', (_, res) => res.json({ ok: true, ts: new Date().toISOString() }));
@@ -139,7 +140,7 @@ app.get('/auth/callback', async (req, res) => {
 // ---------- trang app (embedded) ----------
 app.get(['/app', '/'], (req, res) => {
   // Nếu được gọi từ Admin (có host/hmac) -> cứ trả index.html (App Bridge sẽ forceRedirect nếu cần)
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // ---------- API test (đã auth) ----------
