@@ -16,14 +16,6 @@ app.get("/healthz", (req, res) => {
   });
 });
 
-// Basic route
-app.get("/", (req, res) => {
-  res.json({ 
-    message: "Blog AI Backend is running!",
-    timestamp: new Date().toISOString()
-  });
-});
-
 // Serve static files from frontend dist
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
 

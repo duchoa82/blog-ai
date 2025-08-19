@@ -2,11 +2,11 @@
   "name": "blog-ai-backend",
   "version": "1.0.0",
   "description": "Shopify Backend API for Blog AI App",
-  "main": "server.js",
+  "main": "server-simple.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node server-simple.js",
+    "dev": "nodemon server-simple.js"
   },
   "dependencies": {
     "@shopify/shopify-api": "^11.14.1",
