@@ -40,9 +40,9 @@ function AppContent() {
             title: 'ENIPA AI Blog Writing Assist',
             buttons: {
               primary: {
-                label: 'Create Post',
+                label: 'Create Template',
                 onClick: () => {
-                  console.log('Create Post clicked');
+                  console.log('Create Template clicked');
                 },
               },
             },
@@ -50,29 +50,17 @@ function AppContent() {
         );
         console.log('✅ Top bar set successfully');
 
-        // Set up navigation menu (sidebar)
+        // Set up navigation menu (sidebar) - Giống hệt ui-nav-menu
         app.dispatch(
           app.actions.Navigation.setMenu({
             items: [
               {
-                label: 'Dashboard',
+                label: 'Home',
                 destination: '/',
               },
               {
-                label: 'Blog Posts',
-                destination: '/posts',
-              },
-              {
-                label: 'Create Post',
-                destination: '/create',
-              },
-              {
-                label: 'Products',
-                destination: '/products',
-              },
-              {
-                label: 'Analytics',
-                destination: '/analytics',
+                label: 'Templates',
+                destination: '/templates',
               },
               {
                 label: 'Settings',
@@ -111,7 +99,7 @@ function AppContent() {
       {/* ✅ TitleBar để hiện title trong Shopify Admin */}
       <TitleBar title="ENIPA AI Blog Writing Assist" />
       
-      <Page title="Blog AI Dashboard">
+      <Page title="Blog AI - Home">
         <Layout>
           <Layout.Section>
             <Card>
@@ -132,8 +120,8 @@ function AppContent() {
             <Card>
               <TextContainer>
                 <Heading>Quick Actions</Heading>
-                <Button primary fullWidth>Create New Post</Button>
-                <Button fullWidth style={{ marginTop: '1rem' }}>View Analytics</Button>
+                <Button primary fullWidth>Create Template</Button>
+                <Button fullWidth style={{ marginTop: '1rem' }}>View Templates</Button>
               </TextContainer>
             </Card>
           </Layout.Section>
