@@ -27,7 +27,12 @@ app.get("/", (req, res) => {
 // Serve static files from frontend dist
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-// Catch-all route for SPA
+// Main app route - serve frontend
+app.get(["/", "/app"], (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+});
+
+// Catch-all route for SPA - serve frontend for all other routes
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
