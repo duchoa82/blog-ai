@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { AppBridgeProvider, useAppBridge, TitleBar } from '@shopify/app-bridge-react';
-import { Provider as PolarisProvider, Page, Layout, Card, Button, TextContainer, Heading } from '@shopify/polaris';
+import { Provider as PolarisProvider } from '@shopify/polaris';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import '@shopify/polaris/build/esm/styles.css';
+
+// Import pages
+import DashboardPage from './pages/DashboardPage';
+import TemplatesPage from './pages/TemplatesPage';
+import SettingsPage from './pages/SettingsPage';
 
 // ✅ App Bridge configuration với host parameter
 const config = {
@@ -99,34 +105,14 @@ function AppContent() {
       {/* ✅ TitleBar để hiện title trong Shopify Admin */}
       <TitleBar title="ENIPA AI Blog Writing Assist" />
       
-      <Page title="Blog AI - Home">
-        <Layout>
-          <Layout.Section>
-            <Card>
-              <TextContainer>
-                <Heading>Welcome to Blog AI!</Heading>
-                <p>Your AI-powered blog writing assistant for Shopify.</p>
-                {shopInfo && (
-                  <div>
-                    <p><strong>Shop:</strong> {shopInfo.shop}</p>
-                    <p><strong>Host:</strong> {shopInfo.host}</p>
-                  </div>
-                )}
-              </TextContainer>
-            </Card>
-          </Layout.Section>
-          
-          <Layout.Section secondary>
-            <Card>
-              <TextContainer>
-                <Heading>Quick Actions</Heading>
-                <Button primary fullWidth>Create Template</Button>
-                <Button fullWidth style={{ marginTop: '1rem' }}>View Templates</Button>
-              </TextContainer>
-            </Card>
-          </Layout.Section>
-        </Layout>
-      </Page>
+      {/* React Router for navigation */}
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<DashboardPage shopInfo={shopInfo} />} />
+          <Route path="/templates" element={<TemplatesPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Routes>
+      </BrowserRouter>
     </>
   );
 }
