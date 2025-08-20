@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { Context, useAppBridge } from '@shopify/app-bridge-react';
+import { Context } from '@shopify/app-bridge-react';
 import Navigation from './components/layout/Navigation';
 import DashboardPage from './pages/DashboardPage';
 import BlogGenerationPage from './pages/BlogGenerationPage';

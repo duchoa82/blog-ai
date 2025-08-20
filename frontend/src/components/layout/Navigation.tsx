@@ -1,12 +1,14 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
 
 export default function Navigation() {
-  const location = useLocation();
+  const getCurrentPath = () => {
+    return window.location.pathname;
+  };
   
   const isActive = (path: string) => {
-    if (path === '/' && location.pathname === '/') return true;
-    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    const currentPath = getCurrentPath();
+    if (path === '/' && currentPath === '/') return true;
+    if (path !== '/' && currentPath.startsWith(path)) return true;
     return false;
   };
 
