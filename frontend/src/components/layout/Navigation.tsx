@@ -26,11 +26,15 @@ export default function Navigation() {
 
       <style>{`
         .navigation-sidebar {
-          width: 100%;
-          height: 100%;
+          position: fixed;
+          left: 0;
+          top: 0;
+          width: 240px;
+          height: 100vh;
           background-color: #202223;
           color: white;
           padding: 20px 0;
+          z-index: 1000;
         }
 
         .navigation-sidebar ui-nav-menu {
@@ -54,6 +58,12 @@ export default function Navigation() {
         .navigation-sidebar a.active {
           background-color: #5c6ac4;
           color: white;
+        }
+
+        /* Adjust main content to account for sidebar */
+        .main-content {
+          margin-left: 240px;
+          padding: 20px;
         }
       `}</style>
     </div>
