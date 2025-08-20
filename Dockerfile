@@ -8,17 +8,14 @@ WORKDIR /app
 COPY package*.json ./
 COPY frontend/package*.json ./frontend/
 
-# Install root dependencies
-RUN npm install
+# Install root dependencies (without postinstall script)
+RUN npm install --ignore-scripts
 
-# Copy frontend source files
-COPY frontend/ ./frontend/
+# Copy all source files
+COPY . .
 
 # Install frontend dependencies and build
 RUN cd frontend && npm install && npm run build
-
-# Copy remaining files (if any)
-COPY . .
 
 # Expose port
 EXPOSE 3000

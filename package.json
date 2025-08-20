@@ -7,8 +7,7 @@
     "dev": "cd frontend && npm run dev",
     "build": "cd frontend && npm install && npm run build",
     "preview": "cd frontend && npm run preview",
-    "start": "node server-mock.js",
-    "postinstall": "cd frontend && npm install && npm run build"
+    "start": "node server-mock.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
