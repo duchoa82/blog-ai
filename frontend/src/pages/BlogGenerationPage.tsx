@@ -107,24 +107,18 @@ export default function BlogGenerationPage() {
         language
       };
 
-      const response = await aiService.generateBlogPost(request);
-      
-      if (response.success) {
-        const blog: BlogPost = {
-          title: response.content.split('\n')[0].replace('# ', ''),
-          content: response.content,
-          seoTitle: response.seoTitle,
-          metaDescription: response.metaDescription,
-          keywords: response.keywords
-        };
-        
-        setGeneratedBlog(blog);
-      } else {
-        setError(response.error || 'Failed to generate blog post');
-      }
-    } catch (error) {
-      console.error('Blog generation failed:', error);
-      setError(error instanceof Error ? error.message : 'Unknown error occurred');
+      const result = await aiService.generateBlogPost(request);
+      // Transform the response to match BlogPost interface
+      const blogPost: BlogPost = {
+        title: result.content.split('\n')[0].replace('# ', '') || 'Generated Blog Post',
+        content: result.content || '',
+        seoTitle: result.seoTitle || '',
+        metaDescription: result.metaDescription || '',
+        keywords: result.keywords || []
+      };
+      setGeneratedBlog(blogPost);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate blog post');
     } finally {
       setIsGenerating(false);
     }
@@ -146,103 +140,106 @@ export default function BlogGenerationPage() {
   const selectedProductData = mockProducts.find(p => p.id === selectedProduct);
 
   return (
-    <div>
-      <ui-title-bar title="AI Blog Generation">
-        <button variant="primary" onClick={handleGenerateBlog} disabled={isGenerating}>
-          {isGenerating ? 'Generating...' : 'Generate Blog'}
-        </button>
-      </ui-title-bar>
-      
+    <div className="blog-generation-container">
+      {/* Header */}
+      <div className="page-header">
+        <ui-title-bar title="AI Blog Generation">
+          <ui-button variant="primary" onClick={handleGenerateBlog} disabled={isGenerating}>
+            {isGenerating ? 'Generating...' : 'Generate Blog'}
+          </ui-button>
+        </ui-title-bar>
+      </div>
+
       <ui-layout>
         {/* Configuration Section */}
         <ui-layout-section>
           <ui-card>
-            <ui-text variant="heading" as="h1">Blog Generation Settings</ui-text>
-            <p>Configure your AI blog generation preferences</p>
+            <ui-text variant="headingLg" as="h2">Blog Generation Settings</ui-text>
+            <ui-text variant="bodyMd" as="p">Configure your AI blog generation preferences</ui-text>
             
             {error && (
-              <div style={{
-                padding: '1rem',
-                backgroundColor: '#fef2f2',
-                border: '1px solid #fecaca',
-                borderRadius: '8px',
-                marginBottom: '1rem',
-                color: '#dc2626'
-              }}>
-                <strong>Error:</strong> {error}
+              <div className="error-message">
+                <ui-text variant="bodyMd" as="p" className="error-text">
+                  <strong>Error:</strong> {error}
+                </ui-text>
               </div>
             )}
             
-            <ui-form-layout>
+            <div className="configuration-form">
               {/* Product Selection */}
-              <ui-select
-                label="Select Product"
-                value={selectedProduct}
-                onChange={(value) => setSelectedProduct(value)}
-                options={mockProducts.map(product => ({
-                  label: `${product.title} - ${product.price}`,
-                  value: product.id
-                }))}
-                placeholder="Choose a product to write about"
-              />
+              <div className="form-field">
+                <ui-text variant="bodyMd" as="label">Select Product</ui-text>
+                <ui-select
+                  value={selectedProduct}
+                  onChange={(e: any) => setSelectedProduct(e.target.value)}
+                  options={mockProducts.map(product => ({
+                    label: `${product.title} - ${product.price}`,
+                    value: product.id
+                  }))}
+                />
+              </div>
               
               {selectedProductData && (
-                <div style={{
-                  padding: '1rem',
-                  backgroundColor: '#f6f6f7',
-                  borderRadius: '8px',
-                  marginBottom: '1rem'
-                }}>
-                  <ui-text variant="heading" as="h4" style={{ marginBottom: '0.5rem' }}>
-                    Selected Product: {selectedProductData.title}
-                  </ui-text>
-                  <p style={{ fontSize: '14px', color: '#6d7175' }}>
-                    {selectedProductData.description}
-                  </p>
+                <div className="selected-product">
+                  <ui-text variant="headingMd" as="h4">Selected Product: {selectedProductData.title}</ui-text>
+                  <ui-text variant="bodyMd" as="p">{selectedProductData.description}</ui-text>
                 </div>
               )}
               
               {/* Blog Type */}
-              <ui-select
-                label="Blog Type"
-                value={blogType}
-                onChange={(value) => setBlogType(value)}
-                options={blogTypes}
-              />
+              <div className="form-field">
+                <ui-text variant="bodyMd" as="label">Blog Type</ui-text>
+                <ui-select
+                  value={blogType}
+                  onChange={(e: any) => setBlogType(e.target.value)}
+                  options={blogTypes}
+                />
+              </div>
               
               {/* Tone */}
-              <ui-select
-                label="Writing Tone"
-                value={tone}
-                onChange={(value) => setTone(value)}
-                options={tones}
-              />
+              <div className="form-field">
+                <ui-text variant="bodyMd" as="label">Writing Tone</ui-text>
+                <ui-select
+                  value={tone}
+                  onChange={(e: any) => setTone(e.target.value)}
+                  options={tones}
+                />
+              </div>
               
               {/* Target Audience */}
-              <ui-select
-                label="Target Audience"
-                value={targetAudience}
-                onChange={(value) => setTargetAudience(value)}
-                options={audiences}
-              />
+              <div className="form-field">
+                <ui-text variant="bodyMd" as="label">Target Audience</ui-text>
+                <ui-select
+                  value={targetAudience}
+                  onChange={(e: any) => setTargetAudience(e.target.value)}
+                  options={audiences}
+                />
+              </div>
               
               {/* Language */}
-              <ui-select
-                label="Language"
-                value={language}
-                onChange={(value) => setLanguage(value)}
-                options={languages}
-              />
+              <div className="form-field">
+                <ui-text variant="bodyMd" as="label">Language</ui-text>
+                <ui-select
+                  value={language}
+                  onChange={(e: any) => setLanguage(e.target.value)}
+                  options={languages}
+                />
+              </div>
               
               {/* Max Length */}
-              <ui-text-field
-                label="Maximum Content Length"
-                type="number"
-                value={maxLength.toString()}
-                onChange={(value) => setMaxLength(parseInt(value) || 1000)}
-                help-text="Maximum number of words for generated content"
-              />
-            </ui-form-layout>
+              <div className="form-field">
+                <ui-text variant="bodyMd" as="label">Maximum Content Length</ui-text>
+                <ui-text-field
+                  value={maxLength.toString()}
+                  onChange={(e: any) => setMaxLength(parseInt(e.target.value) || 1000)}
+                  placeholder="Maximum number of words for generated content"
+                  type="number"
+                />
+                <ui-text variant="bodySm" as="p" className="help-text">
+                  Maximum number of words for generated content
+                </ui-text>
+              </div>
+            </div>
           </ui-card>
         </ui-layout-section>
         
@@ -250,59 +247,55 @@ export default function BlogGenerationPage() {
         {generatedBlog && (
           <ui-layout-section>
             <ui-card>
-              <ui-text variant="heading" as="h2">Generated Blog Post</ui-text>
+              <ui-text variant="headingLg" as="h2">Generated Blog Post</ui-text>
               
-              <div style={{ marginBottom: '2rem' }}>
+              <div className="action-buttons">
                 <ui-button variant="primary" onClick={handleSaveBlog}>
                   Save to Shopify
                 </ui-button>
-                <ui-button onClick={handleEditContent} style={{ marginLeft: '1rem' }}>
+                <ui-button variant="secondary" onClick={handleEditContent}>
                   Edit Content
                 </ui-button>
               </div>
               
               {/* SEO Section */}
-              <div style={{ 
-                background: '#f6f6f7', 
-                padding: '1rem', 
-                borderRadius: '8px',
-                marginBottom: '2rem'
-              }}>
-                <ui-text variant="heading" as="h3">SEO Settings</ui-text>
+              <div className="seo-section">
+                <ui-text variant="headingMd" as="h3">SEO Settings</ui-text>
                 
-                <ui-text-field
-                  label="SEO Title"
-                  value={generatedBlog.seoTitle}
-                  onChange={() => {}}
-                />
+                <div className="form-field">
+                  <ui-text variant="bodyMd" as="label">SEO Title</ui-text>
+                  <ui-text-field
+                    value={generatedBlog.seoTitle}
+                    onChange={() => {}}
+                    placeholder="SEO optimized title"
+                  />
+                </div>
                 
-                <ui-text-field
-                  label="Meta Description"
-                  value={generatedBlog.metaDescription}
-                  onChange={() => {}}
-                />
+                <div className="form-field">
+                  <ui-text variant="bodyMd" as="label">Meta Description</ui-text>
+                  <ui-text-field
+                    value={generatedBlog.metaDescription}
+                    onChange={() => {}}
+                    placeholder="Meta description for search engines"
+                  />
+                </div>
                 
-                <ui-text-field
-                  label="Keywords"
-                  value={generatedBlog.keywords.join(', ')}
-                  onChange={() => {}}
-                />
+                <div className="form-field">
+                  <ui-text variant="bodyMd" as="label">Keywords</ui-text>
+                  <ui-text-field
+                    value={generatedBlog.keywords.join(', ')}
+                    onChange={() => {}}
+                    placeholder="Comma-separated keywords"
+                  />
+                </div>
               </div>
               
               {/* Blog Content */}
-              <div>
-                <ui-text variant="heading" as="h3">Blog Content</ui-text>
+              <div className="content-section">
+                <ui-text variant="headingMd" as="h3">Blog Content</ui-text>
                 
-                <div style={{ 
-                  background: 'white', 
-                  border: '1px solid #e1e3e5',
-                  borderRadius: '8px',
-                  padding: '1rem',
-                  marginTop: '1rem',
-                  maxHeight: '400px',
-                  overflowY: 'auto'
-                }}>
-                  <div style={{ whiteSpace: 'pre-line' }}>
+                <div className="blog-content">
+                  <div className="content-text">
                     {generatedBlog.content}
                   </div>
                 </div>
@@ -315,31 +308,168 @@ export default function BlogGenerationPage() {
         {isGenerating && (
           <ui-layout-section>
             <ui-card>
-              <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <ui-text variant="heading">Generating Your Blog Post...</ui-text>
-                <p>AI is working on creating engaging content for you</p>
-                <div style={{ 
-                  width: '40px', 
-                  height: '40px', 
-                  border: '4px solid #f3f3f3',
-                  borderTop: '4px solid #008060',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite',
-                  margin: '1rem auto'
-                }}></div>
-                <p style={{ fontSize: '14px', color: '#6d7175' }}>
+              <div className="loading-state">
+                <ui-text variant="headingLg" as="h2">Generating Your Blog Post...</ui-text>
+                <ui-text variant="bodyMd" as="p">AI is working on creating engaging content for you</ui-text>
+                <div className="spinner"></div>
+                <ui-text variant="bodySm" as="p" className="loading-note">
                   This may take a few moments...
-                </p>
+                </ui-text>
               </div>
             </ui-card>
           </ui-layout-section>
         )}
       </ui-layout>
-      
+
       <style>{`
+        .blog-generation-container {
+          padding: 0;
+          background-color: #f6f6f7;
+          min-height: 100vh;
+        }
+
+        .page-header {
+          background: white;
+          border-bottom: 1px solid #e1e3e5;
+          margin-bottom: 24px;
+        }
+
+        .configuration-form {
+          margin-top: 24px;
+        }
+
+        .form-field {
+          margin-bottom: 24px;
+        }
+
+        .form-field label {
+          display: block;
+          margin-bottom: 8px;
+          font-weight: 500;
+          color: #202223;
+        }
+
+        .help-text {
+          margin-top: 4px;
+          color: #6d7175;
+        }
+
+        .selected-product {
+          background-color: #f6f6f7;
+          padding: 16px;
+          border-radius: 8px;
+          margin-bottom: 24px;
+          border: 1px solid #e1e3e5;
+        }
+
+        .selected-product h4 {
+          margin: 0 0 8px 0;
+          color: #202223;
+        }
+
+        .selected-product p {
+          margin: 0;
+          color: #6d7175;
+          font-size: 14px;
+        }
+
+        .error-message {
+          margin: 16px 0;
+          padding: 12px 16px;
+          background-color: #fef7f7;
+          border: 1px solid #f4b5b5;
+          border-radius: 6px;
+        }
+
+        .error-text {
+          color: #d82c0d;
+          margin: 0;
+        }
+
+        .action-buttons {
+          margin: 24px 0;
+          display: flex;
+          gap: 16px;
+        }
+
+        .seo-section {
+          background-color: #f6f6f7;
+          padding: 24px;
+          border-radius: 8px;
+          margin: 24px 0;
+          border: 1px solid #e1e3e5;
+        }
+
+        .seo-section h3 {
+          margin: 0 0 16px 0;
+          color: #202223;
+        }
+
+        .content-section {
+          margin-top: 24px;
+        }
+
+        .content-section h3 {
+          margin-bottom: 16px;
+          color: #202223;
+        }
+
+        .blog-content {
+          background-color: white;
+          border: 1px solid #e1e3e5;
+          border-radius: 8px;
+          padding: 24px;
+          max-height: 400px;
+          overflow-y: auto;
+        }
+
+        .content-text {
+          white-space: pre-line;
+          line-height: 1.6;
+          color: #202223;
+        }
+
+        .loading-state {
+          text-align: center;
+          padding: 48px 24px;
+        }
+
+        .loading-state h2 {
+          margin-bottom: 16px;
+          color: #202223;
+        }
+
+        .loading-state p {
+          margin-bottom: 24px;
+          color: #6d7175;
+        }
+
+        .spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #008060;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 24px auto;
+        }
+
+        .loading-note {
+          color: #6d7175;
+          font-size: 14px;
+        }
+
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .action-buttons {
+            flex-direction: column;
+            align-items: stretch;
+          }
         }
       `}</style>
     </div>
