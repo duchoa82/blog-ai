@@ -16,9 +16,9 @@ export default function App() {
         {/* Navigation Menu - chỉ thêm phần này */}
         <div style={{ padding: '16px', borderBottom: '1px solid #e1e3e5', background: '#fff' }}>
           <ui-nav-menu>
-            <a href="/" rel="home">Home</a>
-            <a href="/templates">Templates</a>
-            <a href="/settings">Settings</a>
+            <a href="/" rel="home">Dashboard</a>
+            <a href="/generate">Blog Posts</a>
+            <a href="/pricing">Pricing</a>
           </ui-nav-menu>
         </div>
 
