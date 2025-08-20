@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './BlogGenerationPage.css';
 
 export default function BlogGenerationPage() {
+  const navigate = useNavigate();
   const [brandVoice, setBrandVoice] = useState({
     tone: 'professional',
     formalityLevel: 'semi-formal',
@@ -68,7 +70,7 @@ export default function BlogGenerationPage() {
             <h1 className="page-title">AI Blog Generation</h1>
           </div>
           <div className="header-right">
-            <button className="generate-button">
+            <button className="generate-button" onClick={() => navigate('/generate')}>
               Generate Blog Post
             </button>
           </div>
