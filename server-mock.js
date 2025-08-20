@@ -1,12 +1,18 @@
-// server-mock.js - API only backend
+// server-mock.js - Full stack backend with frontend serving
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import session from 'express-session';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ===== Middleware =====
 app.use(cors({
@@ -33,20 +39,21 @@ const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET || 'mock-api-secret';
 const SHOPIFY_SCOPES = process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_blog';
 const SHOPIFY_APP_URL = process.env.SHOPIFY_APP_URL || 'http://localhost:3000';
 
-// ===== Root Route - API Info =====
-app.get('/', (req, res) => {
+// ===== Serve Frontend =====
+app.use(express.static(path.join(__dirname, 'frontend', 'dist')));
+
+// ===== API Routes =====
+app.get('/api/health', (req, res) => {
   res.json({
     message: 'Blog AI Backend API',
     status: 'running',
     timestamp: new Date().toISOString(),
     endpoints: {
-      health: '/healthz',
-      test: '/test',
+      health: '/api/health',
+      test: '/api/test',
       oauth: '/auth/shopify',
-      session: '/session'
-    },
-    frontend: 'http://localhost:5173',
-    note: 'Frontend runs separately on port 5173'
+      session: '/api/session'
+    }
   });
 });
 
@@ -123,22 +130,29 @@ app.get('/auth/shopify/callback', (req, res) => {
 });
 
 // ===== Test Endpoints =====
-app.get('/healthz', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-app.get('/test', (req, res) => {
+app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend test endpoint works!', timestamp: new Date().toISOString() });
 });
 
 // ===== Session Debug =====
-app.get('/session', (req, res) => {
+app.get('/api/session', (req, res) => {
   res.json({
     sessionId: req.sessionID,
     shop: req.session.shop,
     oauthState: req.session.oauthState ? 'set' : 'not set',
     timestamp: new Date().toISOString()
   });
+});
+
+// ===== Serve Frontend for all non-API routes =====
+app.get('*', (req, res) => {
+  // Don't serve frontend for API routes
+  if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  
+  // Serve frontend for all other routes
+  res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
 });
 
 // ===== Error handling =====
@@ -152,11 +166,11 @@ app.use((err, req, res, next) => {
 
 // ===== Start server =====
 app.listen(PORT, () => {
-  console.log(`🚀 Backend API running on port ${PORT}`);
-  console.log(`🔍 Healthcheck: http://localhost:${PORT}/healthz`);
-  console.log(`🔑 Test endpoint: http://localhost:${PORT}/test`);
+  console.log(`🚀 Full-stack app running on port ${PORT}`);
+  console.log(`🔍 Healthcheck: http://localhost:${PORT}/api/health`);
+  console.log(`🔑 Test endpoint: http://localhost:${PORT}/api/test`);
   console.log(`🔐 OAuth: http://localhost:${PORT}/auth/shopify?shop=your-shop.myshopify.com`);
-  console.log(`📊 Session debug: http://localhost:${PORT}/session`);
-  console.log(`🌐 Frontend: http://localhost:5173 (separate Vite dev server)`);
+  console.log(`📊 Session debug: http://localhost:${PORT}/api/session`);
+  console.log(`🌐 Frontend: Served from /frontend/dist`);
   console.log(`📡 CORS enabled for frontend`);
 });
