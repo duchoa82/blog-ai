@@ -77,7 +77,6 @@ function AppBridgeProvider({ children, config }: { children: React.ReactNode; co
 }
 
 function AppContent() {
-  const app = useAppBridge();
   const [shopInfo, setShopInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
