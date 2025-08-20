@@ -1,14 +1,12 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 
 export default function Navigation() {
-  const getCurrentPath = () => {
-    return window.location.pathname;
-  };
+  const location = useLocation();
   
   const isActive = (path: string) => {
-    const currentPath = getCurrentPath();
-    if (path === '/' && currentPath === '/') return true;
-    if (path !== '/' && currentPath.startsWith(path)) return true;
+    if (path === '/' && location.pathname === '/') return true;
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
     return false;
   };
 
@@ -28,15 +26,11 @@ export default function Navigation() {
 
       <style>{`
         .navigation-sidebar {
-          position: fixed;
-          left: 0;
-          top: 0;
-          width: 240px;
-          height: 100vh;
+          width: 100%;
+          height: 100%;
           background-color: #202223;
           color: white;
           padding: 20px 0;
-          z-index: 1000;
         }
 
         .navigation-sidebar ui-nav-menu {
@@ -60,12 +54,6 @@ export default function Navigation() {
         .navigation-sidebar a.active {
           background-color: #5c6ac4;
           color: white;
-        }
-
-        /* Adjust main content to account for sidebar */
-        .main-content {
-          margin-left: 240px;
-          padding: 20px;
         }
       `}</style>
     </div>

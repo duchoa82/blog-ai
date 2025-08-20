@@ -9,6 +9,9 @@ export default defineConfig({
     port: 5173,
   },
   plugins: [react()],
+  optimizeDeps: {
+    include: ["@shopify/polaris"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
