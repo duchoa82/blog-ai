@@ -1,485 +1,242 @@
 import React, { useState } from 'react';
-import { aiService, AIGenerationRequest } from '../services/aiService';
-
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  image: string;
-  price: string;
-}
-
-interface BlogPost {
-  title: string;
-  content: string;
-  seoTitle: string;
-  metaDescription: string;
-  keywords: string[];
-}
-
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    title: 'Organic Cotton T-Shirt',
-    description: 'Comfortable and sustainable cotton t-shirt made from 100% organic materials. Perfect for everyday wear with a soft, breathable fabric that feels great against your skin.',
-    image: 'https://via.placeholder.com/150',
-    price: '$29.99'
-  },
-  {
-    id: '2',
-    title: 'Handmade Ceramic Mug',
-    description: 'Beautiful handcrafted ceramic coffee mug with unique designs. Each piece is individually made by skilled artisans, ensuring no two mugs are exactly alike.',
-    image: 'https://via.placeholder.com/150',
-    price: '$19.99'
-  },
-  {
-    id: '3',
-    title: 'Bamboo Cutting Board',
-    description: 'Eco-friendly bamboo cutting board perfect for all your kitchen needs. Sustainable, durable, and naturally antibacterial - a must-have for any home chef.',
-    image: 'https://via.placeholder.com/150',
-    price: '$34.99'
-  }
-];
+import './BlogGenerationPage.css';
 
 export default function BlogGenerationPage() {
-  const [selectedProduct, setSelectedProduct] = useState<string>('');
-  const [blogType, setBlogType] = useState<string>('product-review');
-  const [tone, setTone] = useState<string>('professional');
-  const [targetAudience, setTargetAudience] = useState<string>('general');
-  const [maxLength, setMaxLength] = useState<number>(1000);
-  const [language, setLanguage] = useState<string>('en');
+  const [brandVoice, setBrandVoice] = useState({
+    tone: 'professional',
+    formalityLevel: 'semi-formal',
+    brandPersonality: 'professional',
+    businessDescription: '',
+    targetCustomer: ''
+  });
+
+  const [contentDetails, setContentDetails] = useState({
+    keywords: '',
+    blogType: 'product-review'
+  });
+
+  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
+  const [recommendedTitle, setRecommendedTitle] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedBlog, setGeneratedBlog] = useState<BlogPost | null>(null);
-  const [error, setError] = useState<string>('');
 
-  const blogTypes = [
-    { value: 'product-review', label: 'Product Review' },
-    { value: 'how-to-guide', label: 'How-to Guide' },
-    { value: 'lifestyle-post', label: 'Lifestyle Post' }
-  ];
+  const handleBrandVoiceChange = (field: string, value: string) => {
+    setBrandVoice(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
-  const tones = [
-    { value: 'professional', label: 'Professional' },
-    { value: 'casual', label: 'Casual' },
-    { value: 'friendly', label: 'Friendly' },
-    { value: 'formal', label: 'Formal' },
-    { value: 'creative', label: 'Creative' },
-    { value: 'technical', label: 'Technical' }
-  ];
+  const handleContentChange = (field: string, value: string) => {
+    setContentDetails(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
-  const audiences = [
-    { value: 'general', label: 'General Audience' },
-    { value: 'professionals', label: 'Professionals' },
-    { value: 'beginners', label: 'Beginners' },
-    { value: 'experts', label: 'Experts' }
-  ];
-
-  const languages = [
-    { value: 'en', label: 'English' },
-    { value: 'es', label: 'Spanish' },
-    { value: 'fr', label: 'French' },
-    { value: 'de', label: 'German' }
-  ];
-
-  const handleGenerateBlog = async () => {
-    if (!selectedProduct) {
-      setError('Please select a product first');
+  const handleGenerateTitles = async () => {
+    if (!brandVoice.businessDescription || !brandVoice.targetCustomer || !contentDetails.keywords) {
+      alert('Please fill in all required fields');
       return;
     }
 
-    setError('');
     setIsGenerating(true);
     
-    try {
-      const product = mockProducts.find(p => p.id === selectedProduct);
-      if (!product) {
-        throw new Error('Product not found');
-      }
-
-      const request: AIGenerationRequest = {
-        productId: selectedProduct,
-        productTitle: product.title,
-        productDescription: product.description,
-        blogType,
-        tone,
-        targetAudience,
-        maxLength,
-        language
-      };
-
-      const result = await aiService.generateBlogPost(request);
-      // Transform the response to match BlogPost interface
-      const blogPost: BlogPost = {
-        title: result.content.split('\n')[0].replace('# ', '') || 'Generated Blog Post',
-        content: result.content || '',
-        seoTitle: result.seoTitle || '',
-        metaDescription: result.metaDescription || '',
-        keywords: result.keywords || []
-      };
-      setGeneratedBlog(blogPost);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate blog post');
-    } finally {
+    // Simulate AI generation
+    setTimeout(() => {
+      const mockTitles = [
+        "How to Choose the Perfect Product for Your Needs",
+        "Industry Trends: What's Hot in 2024",
+        "Product Spotlight: Why This Item Stands Out",
+        "Customer Success Stories: Real Results from Real People",
+        "My Take: Why This Trend Matters for Your Business",
+        "Behind the Scenes: How We Create Quality Products",
+        "Fun Facts: Surprising Things About Our Products"
+      ];
+      
+      setGeneratedTitles(mockTitles);
+      setRecommendedTitle(mockTitles[0]); // First title as recommended
       setIsGenerating(false);
-    }
+    }, 2000);
   };
-
-  const handleSaveBlog = () => {
-    if (generatedBlog) {
-      console.log('Saving blog post:', generatedBlog);
-      // TODO: Implement save to Shopify
-      alert('Blog post saved successfully!');
-    }
-  };
-
-  const handleEditContent = () => {
-    // TODO: Implement content editor
-    alert('Content editor coming soon!');
-  };
-
-  const selectedProductData = mockProducts.find(p => p.id === selectedProduct);
 
   return (
-    <div className="blog-generation-container">
-      {/* Header */}
-      <div className="page-header">
-        <ui-title-bar title="AI Blog Generation">
-        </ui-title-bar>
-        <div className="header-actions">
-          <ui-button variant="primary" onClick={handleGenerateBlog} disabled={isGenerating}>
-            {isGenerating ? 'Generating...' : 'Generate Blog'}
-          </ui-button>
+    <div className="blog-generation-page">
+      {/* Top Header */}
+      <div className="top-header">
+        <div className="header-content">
+          <div className="header-left">
+            <h1 className="page-title">AI Blog Generation</h1>
+          </div>
+          <div className="header-right">
+            <button className="generate-button">
+              Generate Blog Post
+            </button>
+          </div>
         </div>
       </div>
 
-      <ui-layout>
-        {/* Configuration Section */}
-        <ui-layout-section>
-          <ui-card>
-            <ui-text variant="headingLg" as="h2">Blog Generation Settings</ui-text>
-            <ui-text variant="bodyMd" as="p">Configure your AI blog generation preferences</ui-text>
-            
-            {error && (
-              <div className="error-message">
-                <ui-text variant="bodyMd" as="p" className="error-text">
-                  <strong>Error:</strong> {error}
-                </ui-text>
-              </div>
-            )}
-            
-            <div className="configuration-form">
-              {/* Product Selection */}
-              <div className="form-field">
-                <ui-text variant="bodyMd" as="label">Select Product</ui-text>
-                <ui-select
-                  value={selectedProduct}
-                  onChange={(e: any) => setSelectedProduct(e.target.value)}
-                  options={mockProducts.map(product => ({
-                    label: `${product.title} - ${product.price}`,
-                    value: product.id
-                  }))}
-                />
-              </div>
-              
-              {selectedProductData && (
-                <div className="selected-product">
-                  <ui-text variant="headingMd" as="h4">Selected Product: {selectedProductData.title}</ui-text>
-                  <ui-text variant="bodyMd" as="p">{selectedProductData.description}</ui-text>
+      {/* Main Content */}
+      <div className="main-content">
+        {/* Brand Voice Configuration Section */}
+        <div className="brand-voice-section">
+          <div className="section-header">
+            <h2>Brand Voice Configuration</h2>
+            <p>Set your brand voice to generate personalized blog titles</p>
+          </div>
+          
+          <div className="brand-voice-form">
+            <div className="form-columns">
+              <div className="form-column">
+                <div className="form-field">
+                  <label>Tone</label>
+                  <select
+                    value={brandVoice.tone}
+                    onChange={(e) => handleBrandVoiceChange('tone', e.target.value)}
+                  >
+                    <option value="professional">Professional</option>
+                    <option value="casual">Casual</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="formal">Formal</option>
+                    <option value="creative">Creative</option>
+                    <option value="technical">Technical</option>
+                  </select>
                 </div>
-              )}
-              
-              {/* Blog Type */}
-              <div className="form-field">
-                <ui-text variant="bodyMd" as="label">Blog Type</ui-text>
-                <ui-select
-                  value={blogType}
-                  onChange={(e: any) => setBlogType(e.target.value)}
-                  options={blogTypes}
-                />
+                <div className="form-field">
+                  <label>Formality Level</label>
+                  <select
+                    value={brandVoice.formalityLevel}
+                    onChange={(e) => handleBrandVoiceChange('formalityLevel', e.target.value)}
+                  >
+                    <option value="formal">Formal</option>
+                    <option value="semi-formal">Semi-formal</option>
+                    <option value="casual">Casual</option>
+                  </select>
+                </div>
+                <div className="form-field">
+                  <label>Brand Personality</label>
+                  <select
+                    value={brandVoice.brandPersonality}
+                    onChange={(e) => handleBrandVoiceChange('brandPersonality', e.target.value)}
+                  >
+                    <option value="professional">Professional</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="innovative">Innovative</option>
+                    <option value="trustworthy">Trustworthy</option>
+                  </select>
+                </div>
               </div>
               
-              {/* Tone */}
-              <div className="form-field">
-                <ui-text variant="bodyMd" as="label">Writing Tone</ui-text>
-                <ui-select
-                  value={tone}
-                  onChange={(e: any) => setTone(e.target.value)}
-                  options={tones}
-                />
-              </div>
-              
-              {/* Target Audience */}
-              <div className="form-field">
-                <ui-text variant="bodyMd" as="label">Target Audience</ui-text>
-                <ui-select
-                  value={targetAudience}
-                  onChange={(e: any) => setTargetAudience(e.target.value)}
-                  options={audiences}
-                />
-              </div>
-              
-              {/* Language */}
-              <div className="form-field">
-                <ui-text variant="bodyMd" as="label">Language</ui-text>
-                <ui-select
-                  value={language}
-                  onChange={(e: any) => setLanguage(e.target.value)}
-                  options={languages}
-                />
-              </div>
-              
-              {/* Max Length */}
-              <div className="form-field">
-                <ui-text variant="bodyMd" as="label">Maximum Content Length</ui-text>
-                <ui-text-field
-                  value={maxLength.toString()}
-                  onChange={(e: any) => setMaxLength(parseInt(e.target.value) || 1000)}
-                  placeholder="Maximum number of words for generated content"
-                  type="number"
-                />
-                <ui-text variant="bodySm" as="p" className="help-text">
-                  Maximum number of words for generated content
-                </ui-text>
+              <div className="form-column">
+                <div className="form-field">
+                  <label>Business Description</label>
+                  <textarea
+                    value={brandVoice.businessDescription}
+                    onChange={(e) => handleBrandVoiceChange('businessDescription', e.target.value)}
+                    placeholder="Describe your business and what you do"
+                    rows={3}
+                  />
+                </div>
+                <div className="form-field">
+                  <label>Target Customer</label>
+                  <textarea
+                    value={brandVoice.targetCustomer}
+                    onChange={(e) => handleBrandVoiceChange('targetCustomer', e.target.value)}
+                    placeholder="Describe your target customers"
+                    rows={3}
+                  />
+                </div>
               </div>
             </div>
-          </ui-card>
-        </ui-layout-section>
-        
-        {/* Generated Content */}
-        {generatedBlog && (
-          <ui-layout-section>
-            <ui-card>
-              <ui-text variant="headingLg" as="h2">Generated Blog Post</ui-text>
-              
-              <div className="action-buttons">
-                <ui-button variant="primary" onClick={handleSaveBlog}>
-                  Save to Shopify
-                </ui-button>
-                <ui-button variant="secondary" onClick={handleEditContent}>
-                  Edit Content
-                </ui-button>
+          </div>
+        </div>
+
+        {/* Content Details Section */}
+        <div className="content-details-section">
+          <div className="section-header">
+            <h2>Blog Content Details</h2>
+            <p>Provide keywords and content type for your blog</p>
+          </div>
+          
+          <div className="content-form">
+            <div className="form-row">
+              <div className="form-field">
+                <label>Keywords</label>
+                <input
+                  type="text"
+                  value={contentDetails.keywords}
+                  onChange={(e) => handleContentChange('keywords', e.target.value)}
+                  placeholder="Enter keywords for your blog (comma separated)"
+                />
               </div>
-              
-              {/* SEO Section */}
-              <div className="seo-section">
-                <ui-text variant="headingMd" as="h3">SEO Settings</ui-text>
-                
-                <div className="form-field">
-                  <ui-text variant="bodyMd" as="label">SEO Title</ui-text>
-                  <ui-text-field
-                    value={generatedBlog.seoTitle}
-                    onChange={() => {}}
-                    placeholder="SEO optimized title"
-                  />
-                </div>
-                
-                <div className="form-field">
-                  <ui-text variant="bodyMd" as="label">Meta Description</ui-text>
-                  <ui-text-field
-                    value={generatedBlog.metaDescription}
-                    onChange={() => {}}
-                    placeholder="Meta description for search engines"
-                  />
-                </div>
-                
-                <div className="form-field">
-                  <ui-text variant="bodyMd" as="label">Keywords</ui-text>
-                  <ui-text-field
-                    value={generatedBlog.keywords.join(', ')}
-                    onChange={() => {}}
-                    placeholder="Comma-separated keywords"
-                  />
-                </div>
+              <div className="form-field">
+                <label>Blog Type</label>
+                <select
+                  value={contentDetails.blogType}
+                  onChange={(e) => handleContentChange('blogType', e.target.value)}
+                >
+                  <option value="product-review">Product Review</option>
+                  <option value="how-to-guide">How-to Guide</option>
+                  <option value="lifestyle">Lifestyle</option>
+                </select>
               </div>
-              
-              {/* Blog Content */}
-              <div className="content-section">
-                <ui-text variant="headingMd" as="h3">Blog Content</ui-text>
-                
-                <div className="blog-content">
-                  <div className="content-text">
-                    {generatedBlog.content}
+            </div>
+          </div>
+        </div>
+
+        {/* Generate Button */}
+        <div className="generate-section">
+          <button 
+            className="generate-titles-button" 
+            onClick={handleGenerateTitles}
+            disabled={isGenerating}
+          >
+            {isGenerating ? 'Generating...' : 'Generate 7 Blog Titles'}
+          </button>
+        </div>
+
+        {/* Generated Titles Section */}
+        {generatedTitles.length > 0 && (
+          <div className="titles-section">
+            <div className="section-header">
+              <h2>Generated Blog Titles</h2>
+              <p>AI-generated titles based on your brand voice and content</p>
+            </div>
+            
+            <div className="titles-list">
+              {generatedTitles.map((title, index) => (
+                <div key={index} className={`title-item ${index === 0 ? 'recommended' : ''}`}>
+                  <div className="title-number">{index + 1}</div>
+                  <div className="title-content">
+                    <div className="title-text">{title}</div>
+                    <div className="title-pillar">
+                      {index === 0 && 'Educational / How-to'}
+                      {index === 1 && 'Industry Insights / Trends'}
+                      {index === 2 && 'Product-focused'}
+                      {index === 3 && 'Customer Stories / Testimonials'}
+                      {index === 4 && 'Opinion / Thought Leadership'}
+                      {index === 5 && 'Behind-the-scenes / Company Culture'}
+                      {index === 6 && 'Fun / Engaging / Light-hearted'}
+                    </div>
                   </div>
+                  {index === 0 && <div className="recommended-badge">Recommended</div>}
                 </div>
-              </div>
-            </ui-card>
-          </ui-layout-section>
+              ))}
+            </div>
+          </div>
         )}
-        
+
         {/* Loading State */}
         {isGenerating && (
-          <ui-layout-section>
-            <ui-card>
-              <div className="loading-state">
-                <ui-text variant="headingLg" as="h2">Generating Your Blog Post...</ui-text>
-                <ui-text variant="bodyMd" as="p">AI is working on creating engaging content for you</ui-text>
-                <div className="spinner"></div>
-                <ui-text variant="bodySm" as="p" className="loading-note">
-                  This may take a few moments...
-                </ui-text>
-              </div>
-            </ui-card>
-          </ui-layout-section>
+          <div className="loading-section">
+            <div className="loading-content">
+              <h3>Generating Your Blog Titles...</h3>
+              <p>AI is analyzing your brand voice and creating personalized titles</p>
+              <div className="spinner"></div>
+              <p className="loading-note">This may take a few moments...</p>
+            </div>
+          </div>
         )}
-      </ui-layout>
-
-      <style>{`
-        .blog-generation-container {
-          padding: 0;
-          background-color: #f6f6f7;
-          min-height: 100vh;
-        }
-
-        .page-header {
-          background: white;
-          border-bottom: 1px solid #e1e3e5;
-          margin-bottom: 24px;
-        }
-
-        .header-actions {
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 16px;
-        }
-
-        .configuration-form {
-          margin-top: 24px;
-        }
-
-        .form-field {
-          margin-bottom: 24px;
-        }
-
-        .form-field label {
-          display: block;
-          margin-bottom: 8px;
-          font-weight: 500;
-          color: #202223;
-        }
-
-        .help-text {
-          margin-top: 4px;
-          color: #6d7175;
-        }
-
-        .selected-product {
-          background-color: #f6f6f7;
-          padding: 16px;
-          border-radius: 8px;
-          margin-bottom: 24px;
-          border: 1px solid #e1e3e5;
-        }
-
-        .selected-product h4 {
-          margin: 0 0 8px 0;
-          color: #202223;
-        }
-
-        .selected-product p {
-          margin: 0;
-          color: #6d7175;
-          font-size: 14px;
-        }
-
-        .error-message {
-          margin: 16px 0;
-          padding: 12px 16px;
-          background-color: #fef7f7;
-          border: 1px solid #f4b5b5;
-          border-radius: 6px;
-        }
-
-        .error-text {
-          color: #d82c0d;
-          margin: 0;
-        }
-
-        .action-buttons {
-          margin: 24px 0;
-          display: flex;
-          gap: 16px;
-        }
-
-        .seo-section {
-          background-color: #f6f6f7;
-          padding: 24px;
-          border-radius: 8px;
-          margin: 24px 0;
-          border: 1px solid #e1e3e5;
-        }
-
-        .seo-section h3 {
-          margin: 0 0 16px 0;
-          color: #202223;
-        }
-
-        .content-section {
-          margin-top: 24px;
-        }
-
-        .content-section h3 {
-          margin-bottom: 16px;
-          color: #202223;
-        }
-
-        .blog-content {
-          background-color: white;
-          border: 1px solid #e1e3e5;
-          border-radius: 8px;
-          padding: 24px;
-          max-height: 400px;
-          overflow-y: auto;
-        }
-
-        .content-text {
-          white-space: pre-line;
-          line-height: 1.6;
-          color: #202223;
-        }
-
-        .loading-state {
-          text-align: center;
-          padding: 48px 24px;
-        }
-
-        .loading-state h2 {
-          margin-bottom: 16px;
-          color: #202223;
-        }
-
-        .loading-state p {
-          margin-bottom: 24px;
-          color: #6d7175;
-        }
-
-        .spinner {
-          width: 40px;
-          height: 40px;
-          border: 4px solid #f3f3f3;
-          border-top: 4px solid #008060;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin: 24px auto;
-        }
-
-        .loading-note {
-          color: #6d7175;
-          font-size: 14px;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-          .action-buttons {
-            flex-direction: column;
-            align-items: stretch;
-          }
-        }
-      `}</style>
+      </div>
     </div>
   );
 }
