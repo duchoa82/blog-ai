@@ -3,54 +3,7 @@
   background-color: #f6f6f7;
 }
 
-/* Top Header */
-.top-header {
-  background: #202223;
-  color: white;
-  padding: 16px 24px;
-  border-bottom: 1px solid #e1e3e5;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.generate-button {
-  background: #5c6ac4;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.generate-button:hover {
-  background: #4c5aa4;
-}
+/* Page Header now uses PageHeader component */
 
 /* Main Content */
 .main-content {

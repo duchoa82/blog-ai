@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronUpIcon, ChevronDownIcon } from '@shopify/polaris-icons';
+import { Select, TextContainer } from '@shopify/polaris';
+import PageHeader from '../components/layout/PageHeader';
 import './DashboardPage.css';
 
 interface DashboardPageProps {
@@ -8,6 +12,7 @@ interface DashboardPageProps {
 }
 
 export default function DashboardPage({ shopInfo }: DashboardPageProps) {
+  const navigate = useNavigate();
   const [brandVoice, setBrandVoice] = useState({
     brandName: '',
     targetAudience: '',
@@ -16,6 +21,9 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
     writingTone: '',
     industrySector: ''
   });
+
+  const [isBrandVoiceOpen, setIsBrandVoiceOpen] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleBrandVoiceChange = (field: string, value: string) => {
     setBrandVoice(prev => ({
@@ -26,115 +34,219 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
 
   const handleSaveBrandVoice = () => {
     console.log('Saving brand voice:', brandVoice);
+    setIsEditing(false);
     // TODO: Implement save functionality
   };
 
+  const handleEdit = () => {
+    setIsEditing(true);
+    // Show save bar
+    const saveBar = document.getElementById('brand-voice-save-bar');
+    if (saveBar) {
+      saveBar.style.display = 'flex';
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    // Hide save bar
+    const saveBar = document.getElementById('brand-voice-save-bar');
+    if (saveBar) {
+      saveBar.style.display = 'none';
+    }
+    // TODO: Reset to original values
+  };
+
+  // Add event listeners for save bar buttons
+  React.useEffect(() => {
+    const saveButton = document.getElementById('save-brand-voice-button');
+    const discardButton = document.getElementById('discard-brand-voice-button');
+    const saveBar = document.getElementById('brand-voice-save-bar');
+
+    if (saveButton) {
+      saveButton.addEventListener('click', () => {
+        console.log('Saving brand voice');
+        handleSaveBrandVoice();
+        if (saveBar) {
+          saveBar.style.display = 'none';
+        }
+      });
+    }
+
+    if (discardButton) {
+      discardButton.addEventListener('click', () => {
+        console.log('Discarding changes');
+        handleCancel();
+      });
+    }
+
+    // Cleanup
+    return () => {
+      if (saveButton) {
+        saveButton.removeEventListener('click', () => {});
+      }
+      if (discardButton) {
+        discardButton.removeEventListener('click', () => {});
+      }
+    };
+  }, []);
+
   return (
     <div className="dashboard-page">
-      {/* Top Header */}
-      <div className="top-header">
-        <div className="header-content">
-          <div className="header-left">
-            <span className="brand-icon">B</span>
-            <h1 className="app-title">ENIPA AI Blog Writing Assist</h1>
-          </div>
-          <div className="header-right">
-            <button className="generate-button" variant="primary">
-              Generate Blog Post
-            </button>
-            <div className="more-options">⋯</div>
-          </div>
-        </div>
-      </div>
+      {/* Page Header */}
+      <PageHeader 
+        title="Dashboard"
+        buttonText="Generate Blog Post"
+        buttonAction={() => navigate('/generate')}
+        buttonVariant="primary"
+      />
 
       {/* Main Content */}
       <div className="main-content">
         {/* Brand Voice Setup Section */}
         <div className="brand-voice-section">
-          <div className="section-header">
-            <h2>Brand Voice Setup</h2>
-            <p>Configure your brand voice to generate personalized content that matches your brand identity.</p>
-          </div>
-          
-          <div className="brand-voice-form">
-            <div className="form-columns">
-              <div className="form-column">
-                <div className="form-field">
-                  <label>Brand Name</label>
-                  <input
-                    type="text"
-                    value={brandVoice.brandName}
-                    onChange={(e) => handleBrandVoiceChange('brandName', e.target.value)}
-                    placeholder="Enter your brand name"
-                  />
-                </div>
-                <div className="form-field">
-                  <label>Target Audience</label>
-                  <input
-                    type="text"
-                    value={brandVoice.targetAudience}
-                    onChange={(e) => handleBrandVoiceChange('targetAudience', e.target.value)}
-                    placeholder="Describe your target audience"
-                  />
-                </div>
-                <div className="form-field">
-                  <label>Brand Description</label>
-                  <textarea
-                    value={brandVoice.brandDescription}
-                    onChange={(e) => handleBrandVoiceChange('brandDescription', e.target.value)}
-                    placeholder="Describe your brand"
-                    rows={3}
-                  />
-                </div>
-                <div className="form-field">
-                  <label>Brand Guidelines</label>
-                  <textarea
-                    value={brandVoice.brandGuidelines}
-                    onChange={(e) => handleBrandVoiceChange('brandGuidelines', e.target.value)}
-                    placeholder="Your brand guidelines"
-                    rows={3}
-                  />
-                </div>
-              </div>
-              
-              <div className="form-column">
-                <div className="form-field">
-                  <label>Writing Tone</label>
-                  <select
-                    value={brandVoice.writingTone}
-                    onChange={(e) => handleBrandVoiceChange('writingTone', e.target.value)}
-                  >
-                    <option value="">Select tone</option>
-                    <option value="professional">Professional</option>
-                    <option value="casual">Casual</option>
-                    <option value="friendly">Friendly</option>
-                    <option value="authoritative">Authoritative</option>
-                    <option value="conversational">Conversational</option>
-                  </select>
-                </div>
-                <div className="form-field">
-                  <label>Industry/Sector</label>
-                  <input
-                    type="text"
-                    value={brandVoice.industrySector}
-                    onChange={(e) => handleBrandVoiceChange('industrySector', e.target.value)}
-                    placeholder="Your industry or sector"
-                  />
-                </div>
-              </div>
+          <div className="section-header-accordion">
+            <div className="header-left">
+              <h2>Brand Voice Setup</h2>
+              <p className="header-description">
+                Configure your brand voice to generate personalized content that matches your brand identity and resonates with your target audience.
+              </p>
             </div>
-            
-            <div className="form-actions">
+            <div className="header-right">
+              <button className="polaris-button polaris-button--secondary" onClick={handleEdit}>
+                Edit
+              </button>
               <button 
-                className="save-button" 
-                variant="primary"
-                onClick={handleSaveBrandVoice}
+                className="accordion-toggle"
+                onClick={() => setIsBrandVoiceOpen(!isBrandVoiceOpen)}
               >
-                Save Brand Voice
+                {isBrandVoiceOpen ? (
+                  <ChevronUpIcon />
+                ) : (
+                  <ChevronDownIcon />
+                )}
               </button>
             </div>
           </div>
-        </div>
+          
+          {isBrandVoiceOpen && (
+            <div className="brand-voice-form">
+              <div className="form-row-1">
+                <div className="form-column">
+                                  <div className="form-field">
+                  <label>Tone</label>
+                  <Select
+                    label=""
+                    labelInline
+                    options={[
+                      { label: 'Select tone', value: '' },
+                      { label: 'Friendly', value: 'friendly' },
+                      { label: 'Professional', value: 'professional' },
+                      { label: 'Inspirational', value: 'inspirational' },
+                      { label: 'Playful', value: 'playful' },
+                      { label: 'Serious', value: 'serious' },
+                      { label: 'Witty', value: 'witty' },
+                      { label: 'Supportive', value: 'supportive' },
+                      { label: 'Authoritative', value: 'authoritative' }
+                    ]}
+                    value={brandVoice.writingTone}
+                    onChange={(value) => handleBrandVoiceChange('writingTone', value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+                </div>
+                <div className="form-column">
+                                  <div className="form-field">
+                  <label>Formality Level</label>
+                  <Select
+                    label=""
+                    labelInline
+                    options={[
+                      { label: 'Select level', value: '' },
+                      { label: 'Highly Formal', value: 'highly-formal' },
+                      { label: 'Semi-Formal', value: 'semi-formal' },
+                      { label: 'Casual', value: 'casual' },
+                      { label: 'Conversational', value: 'conversational' }
+                    ]}
+                    value={brandVoice.formalityLevel}
+                    onChange={(value) => handleBrandVoiceChange('formalityLevel', value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+                </div>
+                <div className="form-column">
+                                  <div className="form-field">
+                  <label>Brand Personality</label>
+                  <Select
+                    label=""
+                    labelInline
+                    options={[
+                      { label: 'Select personality (choose 3-5)', value: '' },
+                      { label: 'Energetic', value: 'energetic' },
+                      { label: 'Inspiring', value: 'inspiring' },
+                      { label: 'Youthful', value: 'youthful' },
+                      { label: 'Playful', value: 'playful' },
+                      { label: 'Elegant', value: 'elegant' },
+                      { label: 'Luxurious', value: 'luxurious' },
+                      { label: 'Minimalist', value: 'minimalist' },
+                      { label: 'Bold', value: 'bold' },
+                      { label: 'Creative', value: 'creative' },
+                      { label: 'Experimental', value: 'experimental' },
+                      { label: 'Trustworthy', value: 'trustworthy' },
+                      { label: 'Sincere', value: 'sincere' },
+                      { label: 'Considerate', value: 'considerate' },
+                      { label: 'Analytical', value: 'analytical' },
+                      { label: 'Visionary', value: 'visionary' }
+                    ]}
+                    value={brandVoice.brandPersonality}
+                    onChange={(value) => handleBrandVoiceChange('brandPersonality', value)}
+                    disabled={!isEditing}
+                  />
+                </div>
+                </div>
+              </div>
+              
+              <div className="form-row-2">
+                <div className="form-column">
+                                  <div className="form-field">
+                  <label>Business Description</label>
+                  <TextContainer>
+                    <textarea
+                      value={brandVoice.businessDescription}
+                      onChange={(e) => handleBrandVoiceChange('businessDescription', e.target.value)}
+                      placeholder="Describe your business and what you do"
+                      rows={3}
+                      disabled={!isEditing}
+                      className="polaris-textarea"
+                    />
+                  </TextContainer>
+                </div>
+                </div>
+                <div className="form-column">
+                                  <div className="form-field">
+                  <label>Target Customer</label>
+                  <TextContainer>
+                    <textarea
+                      value={brandVoice.targetCustomer}
+                      onChange={(e) => handleBrandVoiceChange('targetCustomer', e.target.value)}
+                      placeholder="Describe your target customers"
+                      rows={3}
+                      disabled={!isEditing}
+                      className="polaris-textarea"
+                    />
+                  </TextContainer>
+                </div>
+                </div>
+                             </div>
+             </div>
+           )}
+           
+           {/* Save Bar */}
+           <ui-save-bar id="brand-voice-save-bar" style={{ display: 'none' }}>
+             <button variant="primary" id="save-brand-voice-button">Save</button>
+             <button id="discard-brand-voice-button">Discard</button>
+           </ui-save-bar>
+         </div>
 
         {/* Quick Actions Section */}
         <div className="quick-actions-section">

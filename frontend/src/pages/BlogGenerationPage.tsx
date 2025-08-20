@@ -1,43 +1,251 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  Card, 
+  Layout, 
+  Select, 
+  TextField, 
+  Button, 
+  TextContainer,
+  Badge
+} from '@shopify/polaris';
+import { 
+  TextBoldIcon, 
+  TextItalicIcon, 
+  TextUnderlineIcon, 
+  ListBulletedIcon, 
+  TextColorIcon, 
+  LinkIcon, 
+  ImageIcon 
+} from '@shopify/polaris-icons';
+import PageHeader from '../components/layout/PageHeader';
 import './BlogGenerationPage.css';
 
 export default function BlogGenerationPage() {
   const navigate = useNavigate();
-  const [brandVoice, setBrandVoice] = useState({
-    tone: 'professional',
-    formalityLevel: 'semi-formal',
-    brandPersonality: 'professional',
-    businessDescription: '',
-    targetCustomer: ''
+  const [contentSettings, setContentSettings] = useState({
+    styleVoice: 'conversational',
+    depthLength: 'standard',
+    goalCta: 'engagement',
+    readerPerspective: 'second-person-you'
   });
 
   const [contentDetails, setContentDetails] = useState({
     keywords: '',
-    blogType: 'product-review'
+    postTitle: '',
+    selectedProduct: '',
+    blogUrl: '',
+    blogContent: `<h2>The Evolution of Summer T-Shirts: From Basic to Trendsetting</h2>
+<p>As we approach Summer 2025, the fashion landscape is evolving with exciting new trends that promise to redefine casual elegance. T-shirts, once considered basic wardrobe staples, are now at the forefront of innovative design and sustainable fashion movements.</p>
+
+<p>The humble t-shirt has undergone a remarkable transformation, evolving from simple undergarments to sophisticated fashion statements. Summer 2025 sees this evolution reaching new heights, with designers reimagining the classic silhouette through innovative cuts, sustainable materials, and bold artistic expressions.</p>
+
+<p>This season's t-shirt trends reflect a broader cultural shift toward conscious consumption and artistic self-expression, making them more than just clothing items—they're canvases for personal storytelling and environmental responsibility.</p>
+
+<h2>Historical Context of T-Shirts in Summer Fashion</h2>
+<p>The t-shirt's journey through fashion history reveals its remarkable adaptability and cultural significance. From its origins as military undergarments to its adoption by various subcultures, the t-shirt has consistently functioned as a barometer for cultural shifts and aesthetic preferences.</p>
+
+<p>Each decade has brought new interpretations, from the rebellious graphics of the 1960s to the minimalist aesthetics of the 1990s, culminating in today's sophisticated blend of heritage and innovation.</p>
+
+<blockquote style="border-left: 4px solid #008060; padding-left: 20px; margin: 32px 0; font-style: italic; font-size: 18px; color: #6d7175;">
+"The t-shirt has consistently functioned as a barometer for cultural shifts and aesthetic preferences, with its evolution reflecting broader societal transformations in attitudes toward leisure, self-expression, and the democratization of fashion."
+<div style="margin-top: 12px; font-size: 14px; color: #8c9196;">- Dr. Eliza Montgomery, Fashion Historian at the Institute of Contemporary Style</div>
+</blockquote>
+
+<p>Summer 2025's t-shirt trends represent a culmination of this rich historical lineage, combining the best elements of past decades with cutting-edge innovations in sustainability, technology, and design philosophy.</p>
+
+<h3>Key Trends for Summer 2025:</h3>
+<ul>
+<li><strong>Eco-friendly Materials:</strong> Organic cotton, bamboo, and recycled fabrics</li>
+<li><strong>Bold Graphics:</strong> Artistic prints and cultural motifs</li>
+<li><strong>Innovative Cuts:</strong> Asymmetric hems and modern silhouettes</li>
+<li><strong>Sustainable Production:</strong> Ethical manufacturing processes</li>
+</ul>
+
+<h3>Styling Tips:</h3>
+<ol>
+<li>Pair with high-waisted shorts for a retro vibe</li>
+<li>Layer under blazers for smart-casual looks</li>
+<li>Accessorize with statement jewelry</li>
+<li>Choose breathable fabrics for hot weather</li>
+</ol>`
   });
+
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [showBlogEditor, setShowBlogEditor] = useState(false);
+  const [showTitleDropdown, setShowTitleDropdown] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
 
   const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
   const [recommendedTitle, setRecommendedTitle] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleBrandVoiceChange = (field: string, value: string) => {
-    setBrandVoice(prev => ({
+  // Helper functions for text formatting
+  const applyHeading = (tag: string) => {
+    console.log('applyHeading called - SIMPLE VERSION:', tag);
+    
+    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const newElement = document.createElement(tag);
+    newElement.textContent = `# ${tag.toUpperCase()} HEADING`;
+    editor.appendChild(newElement);
+    
+    console.log(`${tag} heading appended successfully`);
+    setShowTitleDropdown(false);
+  };
+
+  const applyTextColor = (color: string) => {
+    console.log('applyTextColor called - SIMPLE VERSION:', color);
+    
+    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const span = document.createElement('span');
+    span.style.color = color;
+    span.textContent = ` [COLORED TEXT] `;
+    editor.appendChild(span);
+    
+    console.log('Colored text appended successfully');
+    setShowColorPicker(false);
+  };
+
+  const createLink = (url: string) => {
+    console.log('createLink called - SIMPLE VERSION:', url);
+    
+    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.textContent = ' [LINK TEXT] ';
+    editor.appendChild(link);
+    
+    console.log('Link appended successfully');
+    setShowLinkInput(false);
+    setLinkUrl('');
+  };
+
+  const insertImage = (url: string) => {
+    console.log('insertImage called - SIMPLE VERSION:', url);
+    
+    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    img.alt = 'Inserted Image';
+    editor.appendChild(img);
+    
+    console.log('Image appended successfully');
+    setShowImageModal(false);
+  };
+
+  // Basic formatting functions
+  const applyBold = () => {
+    console.log('applyBold called - SIMPLE VERSION');
+    
+    // Find editor
+    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    if (!editor) {
+      console.log('Editor not found');
+      return;
+    }
+    
+    // Focus editor
+    editor.focus();
+    
+    // Simply append new content to editor
+    const strong = document.createElement('strong');
+    strong.textContent = ' **BOLD TEXT** ';
+    editor.appendChild(strong);
+    
+    console.log('Bold text appended successfully');
+  };
+
+  const applyItalic = () => {
+    console.log('applyItalic called - SIMPLE VERSION');
+    
+    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const em = document.createElement('em');
+    em.textContent = ' *ITALIC TEXT* ';
+    editor.appendChild(em);
+    
+    console.log('Italic text appended successfully');
+  };
+
+  const applyUnderline = () => {
+    console.log('applyUnderline called - SIMPLE VERSION');
+    
+    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const u = document.createElement('u');
+    u.textContent = ' _UNDERLINED TEXT_ ';
+    editor.appendChild(u);
+    
+    console.log('Underlined text appended successfully');
+  };
+
+  const applyList = () => {
+    console.log('applyList called - SIMPLE VERSION');
+    
+    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const ul = document.createElement('ul');
+    const li = document.createElement('li');
+    li.textContent = '• LIST ITEM';
+    ul.appendChild(li);
+    editor.appendChild(ul);
+    
+    console.log('List appended successfully');
+  };
+
+  const handleContentSettingsChange = (field: string, value: string) => {
+    setContentSettings(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleContentChange = (field: string, value: string) => {
+  const handleContentDetailsChange = (field: string, value: string) => {
     setContentDetails(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
+  const handleEditField = (field: string) => {
+    console.log('Editing field:', field);
+    // TODO: Implement field editing
+  };
+
   const handleGenerateTitles = async () => {
-    if (!brandVoice.businessDescription || !brandVoice.targetCustomer || !contentDetails.keywords) {
-      alert('Please fill in all required fields');
+    if (!contentDetails.keywords) {
+      alert('Please enter keywords for your blog');
       return;
     }
 
@@ -63,138 +271,182 @@ export default function BlogGenerationPage() {
 
   return (
     <div className="blog-generation-page">
-      {/* Top Header */}
-      <div className="top-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1 className="page-title">AI Blog Generation</h1>
-          </div>
-          <div className="header-right">
-            <button className="generate-button" onClick={() => navigate('/generate')}>
-              Generate Blog Post
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Page Header */}
+      <PageHeader 
+        title="AI Blog Generation"
+        showButton={false}
+      />
 
       {/* Main Content */}
       <div className="main-content">
-        {/* Brand Voice Configuration Section */}
-        <div className="brand-voice-section">
-          <div className="section-header">
-            <h2>Brand Voice Configuration</h2>
-            <p>Set your brand voice to generate personalized blog titles</p>
-          </div>
-          
-          <div className="brand-voice-form">
-            <div className="form-columns">
-              <div className="form-column">
-                <div className="form-field">
-                  <label>Tone</label>
-                  <select
-                    value={brandVoice.tone}
-                    onChange={(e) => handleBrandVoiceChange('tone', e.target.value)}
-                  >
-                    <option value="professional">Professional</option>
-                    <option value="casual">Casual</option>
-                    <option value="friendly">Friendly</option>
-                    <option value="formal">Formal</option>
-                    <option value="creative">Creative</option>
-                    <option value="technical">Technical</option>
-                  </select>
-                </div>
-                <div className="form-field">
-                  <label>Formality Level</label>
-                  <select
-                    value={brandVoice.formalityLevel}
-                    onChange={(e) => handleBrandVoiceChange('formalityLevel', e.target.value)}
-                  >
-                    <option value="formal">Formal</option>
-                    <option value="semi-formal">Semi-formal</option>
-                    <option value="casual">Casual</option>
-                  </select>
-                </div>
-                <div className="form-field">
-                  <label>Brand Personality</label>
-                  <select
-                    value={brandVoice.brandPersonality}
-                    onChange={(e) => handleBrandVoiceChange('brandPersonality', e.target.value)}
-                  >
-                    <option value="professional">Professional</option>
-                    <option value="friendly">Friendly</option>
-                    <option value="innovative">Innovative</option>
-                    <option value="trustworthy">Trustworthy</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div className="form-column">
-                <div className="form-field">
-                  <label>Business Description</label>
-                  <textarea
-                    value={brandVoice.businessDescription}
-                    onChange={(e) => handleBrandVoiceChange('businessDescription', e.target.value)}
-                    placeholder="Describe your business and what you do"
-                    rows={3}
+        {/* All Fields Container */}
+        <Card>
+          <div style={{ padding: '24px' }}>
+            
+            {/* Content Generation Settings */}
+            <div style={{ marginTop: '24px' }}>
+              <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '500' }}>Content Settings</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+                <div>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#202223', 
+                    marginBottom: '4px',
+                    lineHeight: '1.4'
+                  }}>
+                    Style & Voice
+                  </div>
+                  <Select
+                    label=""
+                    labelInline
+                    options={[
+                      { label: 'Conversational', value: 'conversational' },
+                      { label: 'Storytelling', value: 'storytelling' },
+                      { label: 'Educational / Analytical', value: 'educational-analytical' },
+                      { label: 'Persuasive / Motivational', value: 'persuasive-motivational' },
+                      { label: 'Entertaining / Opinionated', value: 'entertaining-opinionated' }
+                    ]}
+                    value={contentSettings.styleVoice}
+                    onChange={(value) => handleContentSettingsChange('styleVoice', value)}
                   />
                 </div>
-                <div className="form-field">
-                  <label>Target Customer</label>
-                  <textarea
-                    value={brandVoice.targetCustomer}
-                    onChange={(e) => handleBrandVoiceChange('targetCustomer', e.target.value)}
-                    placeholder="Describe your target customers"
-                    rows={3}
+                
+                <div>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#202223', 
+                    marginBottom: '4px',
+                    lineHeight: '1.4'
+                  }}>
+                    Depth & Length
+                  </div>
+                  <Select
+                    label=""
+                    labelInline
+                    options={[
+                      { label: 'Quick Read (500–800 words)', value: 'quick-read' },
+                      { label: 'Standard (1,000–1,500 words)', value: 'standard' },
+                      { label: 'In-depth (2,000+ words)', value: 'in-depth' }
+                    ]}
+                    value={contentSettings.depthLength}
+                    onChange={(value) => handleContentSettingsChange('depthLength', value)}
+                  />
+                </div>
+                
+                <div>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#202223', 
+                    marginBottom: '4px',
+                    lineHeight: '1.4'
+                  }}>
+                    Goal / CTA
+                  </div>
+                  <Select
+                    label=""
+                    labelInline
+                    options={[
+                      { label: 'Engagement (comments & shares)', value: 'engagement' },
+                      { label: 'Awareness (informative / thought leadership)', value: 'awareness' },
+                      { label: 'Conversion (product / service / lead gen)', value: 'conversion' },
+                      { label: 'Community (loyalty & long-term trust)', value: 'community' }
+                    ]}
+                    value={contentSettings.goalCta}
+                    onChange={(value) => handleContentSettingsChange('goalCta', value)}
+                  />
+                </div>
+                
+                <div>
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '500', 
+                    color: '#202223', 
+                    marginBottom: '4px',
+                    lineHeight: '1.4'
+                  }}>
+                    Reader Perspective
+                  </div>
+                  <Select
+                    label=""
+                    labelInline
+                    options={[
+                      { label: 'First-person (I)', value: 'first-person-i' },
+                      { label: 'First-person (We)', value: 'first-person-we' },
+                      { label: 'Second-person (You)', value: 'second-person-you' },
+                      { label: 'Third-person (They/It)', value: 'third-person-they-it' }
+                    ]}
+                    value={contentSettings.readerPerspective}
+                    onChange={(value) => handleContentSettingsChange('readerPerspective', value)}
                   />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Content Details Section */}
-        <div className="content-details-section">
-          <div className="section-header">
-            <h2>Blog Content Details</h2>
-            <p>Provide keywords and content type for your blog</p>
-          </div>
-          
-          <div className="content-form">
-            <div className="form-row">
-              <div className="form-field">
-                <label>Keywords</label>
-                <input
-                  type="text"
-                  value={contentDetails.keywords}
-                  onChange={(e) => handleContentChange('keywords', e.target.value)}
-                  placeholder="Enter keywords for your blog (comma separated)"
-                />
+            {/* Keywords Section */}
+            <div style={{ marginTop: '32px' }}>
+              <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '500' }}>Content Details</h3>
+              <TextField
+                label="Keywords"
+                value={contentDetails.keywords}
+                onChange={(value) => handleContentDetailsChange('keywords', value)}
+                placeholder="Select keywords"
+                autoComplete="off"
+              />
+            </div>
+
+
+
+            {/* Post Title Section */}
+            <div style={{ marginTop: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  color: '#202223'
+                }}>
+                  Post title
+                </div>
+                <Button variant="plain" url="#" size="slim">
+                  Generate title
+                </Button>
               </div>
-              <div className="form-field">
-                <label>Blog Type</label>
-                <select
-                  value={contentDetails.blogType}
-                  onChange={(e) => handleContentChange('blogType', e.target.value)}
+              <TextField
+                label=""
+                value={contentDetails.postTitle}
+                onChange={(value) => handleContentDetailsChange('postTitle', value)}
+                placeholder="Enter your post title"
+                autoComplete="off"
+              />
+            </div>
+
+            {/* Blog URL Input */}
+            <div style={{ marginTop: '24px' }}>
+              <TextField
+                label="Blog URL"
+                value={contentDetails.blogUrl}
+                onChange={(value) => handleContentDetailsChange('blogUrl', value)}
+                placeholder="Enter URL for your blog post"
+                autoComplete="off"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #e1e3e5' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button 
+                  variant="primary"
+                  onClick={() => setShowBlogEditor(true)}
+                  icon="⭐"
                 >
-                  <option value="product-review">Product Review</option>
-                  <option value="how-to-guide">How-to Guide</option>
-                  <option value="lifestyle">Lifestyle</option>
-                </select>
+                  Generate
+                </Button>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Generate Button */}
-        <div className="generate-section">
-          <button 
-            className="generate-titles-button" 
-            onClick={handleGenerateTitles}
-            disabled={isGenerating}
-          >
-            {isGenerating ? 'Generating...' : 'Generate 7 Blog Titles'}
-          </button>
-        </div>
+        </Card>
 
         {/* Generated Titles Section */}
         {generatedTitles.length > 0 && (
@@ -238,7 +490,715 @@ export default function BlogGenerationPage() {
             </div>
           </div>
         )}
+
+        {/* Blog Editor Fullwidth Modal */}
+        {showBlogEditor && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'white',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '16px 24px',
+              borderBottom: '1px solid #e1e3e5',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#fafbfc'
+            }}>
+              <div style={{ fontSize: '18px', fontWeight: '600' }}>Tapita AI SEO Blog</div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <Button variant="secondary" size="slim">Preview</Button>
+                <Button variant="primary" size="slim">Publish</Button>
+                <Button variant="plain" onClick={() => setShowBlogEditor(false)}>✕</Button>
+              </div>
+            </div>
+
+            {/* Main Content */}
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+              {/* Left Sidebar - Post Settings */}
+              <div style={{
+                width: '320px',
+                borderRight: '1px solid #e1e3e5',
+                backgroundColor: '#fafbfc',
+                overflowY: 'auto',
+                padding: '20px'
+              }}>
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: '#202223' }}>Post</div>
+                  
+                  {/* Visibility */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Visibility</div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <input type="radio" name="visibility" value="visible" />
+                        <span style={{ fontSize: '13px' }}>Visible</span>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <input type="radio" name="visibility" value="hidden" defaultChecked />
+                        <span style={{ fontSize: '13px' }}>Hidden</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Featured Image */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Featured Image</div>
+                    <Button variant="secondary" size="slim">Generate with AI</Button>
+                    <div style={{
+                      width: '100%',
+                      height: '120px',
+                      border: '2px dashed #c9cccf',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: '#f6f6f7',
+                      marginBottom: '8px'
+                    }}>
+                      <div style={{ fontSize: '12px', color: '#6d7175', marginBottom: '4px' }}>Upload file</div>
+                      <div style={{ fontSize: '12px', color: '#6d7175' }}>Select from library</div>
+                    </div>
+                    <TextField
+                      label="or Insert image URL"
+                      placeholder="Enter image URL"
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  {/* Excerpt */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Excerpt</div>
+                    <Button variant="secondary" size="slim">Generate with AI</Button>
+                    <textarea
+                      placeholder="Enter excerpt..."
+                      style={{
+                        width: '100%',
+                        height: '80px',
+                        padding: '8px',
+                        border: '1px solid #c9cccf',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        resize: 'none'
+                      }}
+                    />
+                  </div>
+
+                  {/* Organization */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Organization</div>
+                    <Select
+                      label="Author"
+                      labelInline
+                      options={[{ label: 'Default', value: 'default' }]}
+                      value="default"
+                      onChange={() => {}}
+                    />
+                    <Select
+                      label="Blog *"
+                      labelInline
+                      options={[{ label: 'News', value: 'news' }]}
+                      value="news"
+                      onChange={() => {}}
+                    />
+                  </div>
+
+                  {/* Tags */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Tags</div>
+                    <Button variant="secondary" size="slim">Generate with AI</Button>
+                    <TextField
+                      label=""
+                      placeholder="Enter tags..."
+                      value="fashion trends, summer 2025, stylish t-shirts, sumi"
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  {/* SEO Title */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>SEO title</div>
+                    <Button variant="secondary" size="slim">Auto fill</Button>
+                    <TextField
+                      label=""
+                      placeholder="Enter SEO title..."
+                      value="Stay Cool in Style: Essential T-Shirt Trends for Surr"
+                      autoComplete="off"
+                    />
+                    <div style={{ fontSize: '12px', color: '#008060', marginTop: '4px' }}>60 characters</div>
+                  </div>
+
+                  {/* SEO Description */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>SEO description</div>
+                    <Button variant="secondary" size="slim">Generate with AI</Button>
+                    <textarea
+                      placeholder="Enter SEO description..."
+                      value="Discover the essential T-shirt trends for Summer 2025 and learn how to stay cool in style with our fresh fashion insights."
+                      style={{
+                        width: '100%',
+                        height: '80px',
+                        padding: '8px',
+                        border: '1px solid #c9cccf',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        resize: 'none'
+                      }}
+                    />
+                    <div style={{ fontSize: '12px', color: '#008060', marginTop: '4px' }}>122 characters</div>
+                  </div>
+
+                  {/* URL and Handle */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>URL and handle</div>
+                    <TextField
+                      label=""
+                      placeholder="Enter URL..."
+                      value="/news/stay-cool-in-style-essential-t-shirt-trends"
+                      autoComplete="off"
+                      size="slim"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Section - Blog Post Preview */}
+              <div style={{
+                flex: 1,
+                padding: '0',
+                margin: '0 auto',
+                overflowY: 'auto',
+                backgroundColor: 'white'
+              }}>
+                {/* Rich Text Editor - Full Width & Floating */}
+                <div style={{ 
+                  width: '100%',
+                  backgroundColor: 'white',
+                  position: 'sticky',
+                  top: '0',
+                  zIndex: 10,
+                  marginBottom: '24px'
+                }}>
+                  {/* Toolbar */}
+                  <div style={{ 
+                    padding: '0 40px',
+                    backgroundColor: '#f6f6f7',
+                    borderBottom: '1px solid #e1e3e5',
+                    display: 'flex',
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    top: '0',
+                    zIndex: 10
+                  }}>
+                    {/* Text Style Dropdown - H2, H3, H4, H5, Paragraph */}
+                    <button 
+                      onClick={() => setShowTitleDropdown(!showTitleDropdown)}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        gap: '4px',
+                        padding: '8px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <img src="/TextTitleIcon.svg" alt="Title" style={{ width: '16px', height: '16px' }} />
+                      <span style={{ fontSize: '12px' }}>⌄</span>
+                    </button>
+                    
+                    {/* Title Dropdown */}
+                    {showTitleDropdown && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: '0',
+                        backgroundColor: 'white',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        zIndex: 1000,
+                        minWidth: '150px',
+                        marginTop: '4px'
+                      }}>
+                        <div style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }} onClick={() => applyHeading('h1')}>Heading 1</div>
+                        <div style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }} onClick={() => applyHeading('h2')}>Heading 2</div>
+                        <div style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }} onClick={() => applyHeading('h5')}>Heading 5</div>
+                        <div style={{ padding: '8px 12px', cursor: 'pointer' }} onClick={() => applyHeading('p')}>Paragraph</div>
+                      </div>
+                    )}
+
+                    {/* Bold */}
+                    <button 
+                      onClick={applyBold}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        color: 'black'
+                      }}
+                    >
+                      <img src="/TextBoldIcon.svg" alt="Bold" style={{ width: '16px', height: '16px' }} />
+                    </button>
+
+                    {/* Italic */}
+                    <button 
+                      onClick={applyItalic}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        color: 'black'
+                      }}
+                    >
+                      <img src="/TextItalicIcon.svg" alt="Italic" style={{ width: '16px', height: '16px' }} />
+                    </button>
+
+                    {/* Underline */}
+                    <button 
+                      onClick={applyUnderline}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        color: 'black'
+                      }}
+                    >
+                      <img src="/TextUnderlineIcon.svg" alt="Underline" style={{ width: '16px', height: '16px' }} />
+                    </button>
+
+                    {/* Bullet List */}
+                    <button 
+                      onClick={applyList}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        color: 'black'
+                      }}
+                    >
+                      <img src="/ListBulletedIcon.svg" alt="List" style={{ width: '16px', height: '16px' }} />
+                    </button>
+
+                    {/* Text Color */}
+                    <button 
+                      onClick={() => setShowColorPicker(!showColorPicker)}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        color: 'black'
+                      }}
+                    >
+                      <img src="/TextColorIcon.svg" alt="Color" style={{ width: '16px', height: '16px' }} />
+                    </button>
+
+                    {/* Link */}
+                    <button 
+                      onClick={() => {
+                        const selection = window.getSelection();
+                        if (selection && selection.rangeCount > 0) {
+                          const range = selection.getRangeAt(0);
+                          if (!range.collapsed) {
+                            // Text được select - hiện input
+                            setShowLinkInput(true);
+                            setLinkUrl('');
+                          }
+                        }
+                      }}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        color: 'black'
+                      }}
+                    >
+                      <img src="/LinkIcon.svg" alt="Link" style={{ width: '16px', height: '16px' }} />
+                    </button>
+
+                    {/* Image */}
+                    <button 
+                      onClick={() => setShowImageModal(!showImageModal)}
+                      style={{
+                        padding: '8px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        fontSize: '16px',
+                        color: 'black'
+                      }}
+                    >
+                      <img src="/ImageIcon.svg" alt="Image" style={{ width: '16px', height: '16px' }} />
+                    </button>
+                  </div>
+                  
+                  {/* Content Area - Centered with Max Width and Left Aligned Text */}
+                  <div style={{ 
+                    padding: '40px',
+                    maxWidth: '980px',
+                    margin: '0 auto',
+                    textAlign: 'left'
+                  }}>
+                    {/* Title */}
+                    <h1 style={{
+                      fontSize: '32px',
+                      fontWeight: '700',
+                      marginBottom: '24px',
+                      lineHeight: '1.2',
+                      color: '#202223'
+                    }}>
+                      Stay Cool in Style: Must-Have T-Shirt Trends for Summer 2025
+                    </h1>
+
+                    {/* Media Section */}
+                    <div style={{
+                      width: '980px',
+                      height: '200px',
+                      border: '2px dashed #c9cccf',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: '#f6f6f7',
+                      marginBottom: '24px'
+                    }}>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Button variant="secondary" size="slim">↑ Upload file</Button>
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Button variant="secondary" size="slim">Select from library</Button>
+                      </div>
+                      <Button variant="secondary" size="slim">Generate with AI</Button>
+                    </div>
+
+                    {/* Blog Content Editor */}
+                    <div 
+                      contentEditable
+                      style={{ 
+                        fontSize: '16px', 
+                        lineHeight: '1.6', 
+                        color: '#202223',
+                        minHeight: '200px',
+                        border: '1px solid #e1e3e5',
+                        borderRadius: '8px',
+                        padding: '16px',
+                        outline: 'none',
+                        position: 'relative'
+                      }}
+                      onInput={(e) => {
+                        // Handle content changes
+                      }}
+                    >
+                      <p style={{ marginBottom: '20px' }}>
+                        The sweltering heat of summer 2025 is on the horizon, and fashion enthusiasts are already contemplating their seasonal wardrobe refreshes. As temperatures rise, the humble t-shirt emerges as the quintessential sartorial staple—versatile, comfortable, and increasingly fashion-forward. This season's t-shirt trends reflect a fascinating amalgamation of nostalgic elements, technological advancements, and sustainable practices that cater to the discerning modern consumer. Whether you're lounging poolside, attending outdoor social gatherings, or navigating urban landscapes, these trending styles will ensure you remain simultaneously cool and stylish throughout the estival months.
+                      </p>
+
+                      <h2 style={{
+                        fontSize: '24px',
+                        fontWeight: '600',
+                        marginBottom: '16px',
+                        marginTop: '32px'
+                      }}>
+                        The Evolution of Summer T-Shirts: From Basic to Trendsetting
+                      </h2>
+
+                      <p style={{ marginBottom: '20px' }}>
+                        The t-shirt's trajectory from utilitarian undergarment to fashion statement piece represents one of the most remarkable metamorphoses in sartorial history. Initially conceptualized as a practical solution for military personnel in the early 20th century, the t-shirt has transcended its humble origins to become a canvas for self-expression and an indicator of contemporary aesthetic sensibilities.
+                      </p>
+
+                      <p style={{ marginBottom: '20px' }}>
+                        For Summer 2025, designers have reimagined this wardrobe fundamental through innovative silhouettes, avant-garde textile technologies, and a renewed emphasis on sustainability. The resultant iterations represent a harmonious synthesis of comfort and high fashion, challenging the previously entrenched dichotomy between the two concepts.
+                      </p>
+
+                      <h3 style={{
+                        fontSize: '20px',
+                        fontWeight: '600',
+                        marginBottom: '12px',
+                        marginTop: '24px',
+                        marginLeft: '20px'
+                      }}>
+                        Historical Context of T-Shirts in Summer Fashion
+                      </h3>
+
+                      <p style={{ marginBottom: '20px', marginLeft: '20px' }}>
+                        The t-shirt's association with summer dates back to mid-20th century America, when celebrities like Marlon Brando and James Dean popularized the garment as outerwear, challenging societal norms and establishing it as a symbol of youthful rebellion. The subsequent decades witnessed the t-shirt's increasing ubiquity across demographic and socioeconomic boundaries, with each era introducing distinctive stylistic variations.
+                      </p>
+
+                      <p style={{ marginBottom: '20px', marginLeft: '20px' }}>
+                        The 1960s and 1970s saw the emergence of tie-dye and graphic prints as vehicles for countercultural messaging, while the 1980s embraced oversized silhouettes and bold logo placements. The minimalist aesthetic of the 1990s temporarily relegated the t-shirt to basic status, before the early 2000s reintroduced embellishments and slogan designs.
+                      </p>
+
+                      <blockquote style={{
+                        borderLeft: '4px solid #008060',
+                        paddingLeft: '20px',
+                        margin: '32px 0',
+                        fontStyle: 'italic',
+                        fontSize: '18px',
+                        color: '#6d7175',
+                        marginLeft: '20px'
+                      }}>
+                        "The t-shirt has consistently functioned as a barometer for cultural shifts and aesthetic preferences, with its evolution reflecting broader societal transformations in attitudes toward leisure, self-expression, and the democratization of fashion."
+                        <div style={{ marginTop: '12px', fontSize: '14px', color: '#8c9196' }}>
+                          — Dr. Eliza Montgomery, Fashion Historian at the Institute of Contemporary Style
+                        </div>
+                      </blockquote>
+
+                      <p style={{ marginBottom: '20px', marginLeft: '20px' }}>
+                        Summer 2025's t-shirt trends represent the culmination of this rich historical lineage, synthesizing elements from various decades while introducing cutting-edge innovations in sustainability, technology, and design philosophy.
+                      </p>
+                      
+                      {/* Link Input Overlay */}
+                      {showLinkInput && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          backgroundColor: 'white',
+                          border: '1px solid #ccc',
+                          borderRadius: '8px',
+                          padding: '16px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          zIndex: 1000,
+                          minWidth: '300px'
+                        }}>
+                          <div style={{ marginBottom: '12px', fontWeight: '500' }}>Insert Link</div>
+                          <input
+                            type="text"
+                            placeholder="Enter URL..."
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '8px 12px',
+                              border: '1px solid #ccc',
+                              borderRadius: '4px',
+                              marginBottom: '12px'
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                // Tạo link
+                                createLink(linkUrl);
+                              }
+                            }}
+                          />
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button 
+                              onClick={() => setShowLinkInput(false)}
+                              style={{
+                                padding: '6px 12px',
+                                border: '1px solid #ccc',
+                                backgroundColor: 'white',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button 
+                              onClick={() => createLink(linkUrl)}
+                              style={{
+                                padding: '6px 12px',
+                                border: 'none',
+                                backgroundColor: '#008060',
+                                color: 'white',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Insert
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Color Picker Overlay */}
+                      {showColorPicker && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          backgroundColor: 'white',
+                          border: '1px solid #ccc',
+                          borderRadius: '8px',
+                          padding: '16px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          zIndex: 1000,
+                          minWidth: '250px'
+                        }}>
+                          <div style={{ marginBottom: '12px', fontWeight: '500' }}>Text Color</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '16px' }}>
+                            {['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A'].map((color) => (
+                              <button
+                                key={color}
+                                onClick={() => applyTextColor(color)}
+                                style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  backgroundColor: color,
+                                  border: '1px solid #ccc',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer'
+                                }}
+                                title={color}
+                              />
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button 
+                              onClick={() => setShowColorPicker(false)}
+                              style={{
+                                padding: '6px 12px',
+                                border: '1px solid #ccc',
+                                backgroundColor: 'white',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Close
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Image Modal Overlay */}
+                      {showImageModal && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          backgroundColor: 'white',
+                          border: '1px solid #ccc',
+                          borderRadius: '8px',
+                          padding: '16px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          zIndex: 1000,
+                          minWidth: '350px'
+                        }}>
+                          <div style={{ marginBottom: '16px', fontWeight: '500' }}>Insert Image</div>
+                          
+                          {/* Image URL Input */}
+                          <div style={{ marginBottom: '16px' }}>
+                            <div style={{ marginBottom: '8px', fontSize: '14px' }}>Image URL:</div>
+                            <input
+                              type="text"
+                              placeholder="https://example.com/image.jpg"
+                              style={{
+                                width: '100%',
+                                padding: '8px 12px',
+                                border: '1px solid #ccc',
+                                borderRadius: '4px'
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && (e.target as HTMLInputElement).value) {
+                                  insertImage((e.target as HTMLInputElement).value);
+                                }
+                              }}
+                            />
+                          </div>
+                          
+                          {/* Upload Buttons */}
+                          <div style={{ marginBottom: '16px' }}>
+                            <div style={{ marginBottom: '8px', fontSize: '14px' }}>Or upload:</div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button style={{
+                                padding: '8px 12px',
+                                border: '1px solid #ccc',
+                                backgroundColor: 'white',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '14px'
+                              }}>
+                                📁 Choose File
+                              </button>
+                              <button style={{
+                                padding: '8px 12px',
+                                border: '1px solid #ccc',
+                                backgroundColor: 'white',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '14px'
+                              }}>
+                                🖼️ From Library
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button 
+                              onClick={() => setShowImageModal(false)}
+                              style={{
+                                padding: '6px 12px',
+                                border: '1px solid #ccc',
+                                backgroundColor: 'white',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button 
+                              onClick={() => {
+                                const urlInput = document.querySelector('input[placeholder="https://example.com/image.jpg"]') as HTMLInputElement;
+                                if (urlInput && urlInput.value) {
+                                  insertImage(urlInput.value);
+                                }
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                border: 'none',
+                                backgroundColor: '#008060',
+                                color: 'white',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Insert
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+
