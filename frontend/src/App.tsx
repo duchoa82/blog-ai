@@ -45,9 +45,29 @@ function AppBridgeProvider({ children, config }: { children: React.ReactNode; co
       import('@shopify/app-bridge/client').then(({ createApp }) => {
         const appBridge = createApp(config);
         setApp(appBridge);
+        console.log('✅ App Bridge client created:', appBridge);
+      }).catch(error => {
+        console.error('❌ Failed to create App Bridge client:', error);
       });
     }
   }, [config]);
+
+  // Show loading while App Bridge initializes
+  if (!app && config.host !== 'mock-host') {
+    return (
+      <div>
+        <ui-title-bar title="Initializing..."></ui-title-bar>
+        <ui-layout>
+          <ui-layout-section>
+            <ui-card>
+              <ui-text variant="heading">Initializing App Bridge...</ui-text>
+              <p>Setting up Shopify integration...</p>
+            </ui-card>
+          </ui-layout-section>
+        </ui-layout>
+      </div>
+    );
+  }
 
   return (
     <Context.Provider value={app}>
