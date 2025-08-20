@@ -1,59 +1,71 @@
-import React, { useEffect } from 'react';
-import { useAppBridge } from '@shopify/app-bridge-react';
+import React from 'react';
+import { useLocation } from 'react-router-dom';
 
-interface NavigationProps {
-  shopInfo: any;
-}
+export default function Navigation() {
+  const location = useLocation();
+  
+  const isActive = (path: string) => {
+    if (path === '/' && location.pathname === '/') return true;
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    return false;
+  };
 
-export default function Navigation({ shopInfo }: NavigationProps) {
-  const app = useAppBridge();
+  return (
+    <div className="navigation-sidebar">
+      <ui-nav-menu>
+        <a href="/" rel="home" className={isActive('/') ? 'active' : ''}>
+          Home
+        </a>
+        <a href="/templates" className={isActive('/templates') ? 'active' : ''}>
+          Templates
+        </a>
+        <a href="/settings" className={isActive('/settings') ? 'active' : ''}>
+          Settings
+        </a>
+      </ui-nav-menu>
 
-  useEffect(() => {
-    // 🔧 Development mode: Skip App Bridge navigation setup
-    if (shopInfo?.isDevelopment || !app) {
-      console.log('🔧 Development mode: Skipping App Bridge navigation setup');
-      return;
-    }
+      <style>{`
+        .navigation-sidebar {
+          position: fixed;
+          left: 0;
+          top: 0;
+          width: 240px;
+          height: 100vh;
+          background-color: #202223;
+          color: white;
+          padding: 20px 0;
+          z-index: 1000;
+        }
 
-    // 🚀 Production mode: Set up App Bridge navigation
-    try {
-      console.log('🚀 Setting up App Bridge navigation...');
-      
-      // Note: App Bridge v3 doesn't have setMenu/setTopBar actions
-      // Navigation is handled by Shopify Admin automatically
-      console.log('✅ App Bridge v3: Navigation handled by Shopify Admin');
-      
-    } catch (error) {
-      console.error('❌ Failed to set up navigation:', error);
-    }
-  }, [app, shopInfo]);
+        .navigation-sidebar ui-nav-menu {
+          width: 100%;
+        }
 
-  // 🔧 Development mode: Show simple navigation header
-  if (shopInfo?.isDevelopment || !app) {
-    return (
-      <div>
-        {/* Simple navigation header for development */}
-        <ui-title-bar title="ENIPA AI Blog Writing Assist">
-          <ui-button variant="secondary" onClick={() => window.location.href = '/'}>
-            Dashboard
-          </ui-button>
-          <ui-button variant="secondary" onClick={() => window.location.href = '/generate'}>
-            Generate
-          </ui-button>
-          <ui-button variant="secondary" onClick={() => window.location.href = '/templates'}>
-            Templates
-          </ui-button>
-          <ui-button variant="secondary" onClick={() => window.location.href = '/pricing'}>
-            Pricing
-          </ui-button>
-          <ui-button variant="secondary" onClick={() => window.location.href = '/settings'}>
-            Settings
-          </ui-button>
-        </ui-title-bar>
-      </div>
-    );
-  }
+        .navigation-sidebar a {
+          display: block;
+          padding: 12px 24px;
+          color: #ffffff;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 500;
+          transition: background-color 0.2s ease;
+        }
 
-  // 🚀 Production mode: Return null (Shopify Admin handles navigation)
-  return null;
+        .navigation-sidebar a:hover {
+          background-color: #2c2e2f;
+        }
+
+        .navigation-sidebar a.active {
+          background-color: #5c6ac4;
+          color: white;
+        }
+
+        /* Adjust main content to account for sidebar */
+        .main-content {
+          margin-left: 240px;
+          padding: 20px;
+        }
+      `}</style>
+    </div>
+  );
 }

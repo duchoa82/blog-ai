@@ -54,5 +54,6 @@ declare namespace JSX {
       title: string;
       expanded?: boolean;
     };
+    'ui-nav-menu': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
   }
 }

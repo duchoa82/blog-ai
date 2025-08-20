@@ -120,19 +120,22 @@ function AppContent() {
 
   return (
     <>
-      {/* Navigation component handles sidebar and top bar */}
-      <Navigation shopInfo={shopInfo} />
+      {/* Navigation sidebar */}
+      <Navigation />
       
-      {/* React Router for navigation */}
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<DashboardPage shopInfo={shopInfo} />} />
-          <Route path="/generate" element={<BlogGenerationPage />} />
-          <Route path="/templates" element={<TemplatesPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
-      </BrowserRouter>
+      {/* Main content area */}
+      <div className="main-content">
+        {/* React Router for navigation */}
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<DashboardPage shopInfo={shopInfo} />} />
+            <Route path="/generate" element={<BlogGenerationPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Routes>
+        </BrowserRouter>
+      </div>
     </>
   );
 }
