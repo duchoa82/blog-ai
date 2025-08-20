@@ -96,9 +96,25 @@ export default function PricingPage() {
 
   return (
     <div>
-      <ui-title-bar title="Pricing Plans">
-        <button variant="primary">Contact Sales</button>
-      </ui-title-bar>
+      <div className="page-header">
+        <ui-title-bar title="Pricing Plans">
+        </ui-title-bar>
+        <div className="header-actions">
+          <ui-button variant="primary">Contact Sales</ui-button>
+        </div>
+      </div>
+      
+      <style>{`
+        .page-header {
+          margin-bottom: 24px;
+        }
+
+        .header-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 16px;
+        }
+      `}</style>
       
       <ui-layout>
         <ui-layout-section>

@@ -46,10 +46,12 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
       {/* Top Header */}
       <div className="dashboard-header">
         <ui-title-bar title="ENIPA AI Blog Writing Assist">
+        </ui-title-bar>
+        <div className="header-actions">
           <ui-button variant="primary" onClick={() => handleQuickAction('generate')}>
             Generate Blog Post
           </ui-button>
-        </ui-title-bar>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -255,6 +257,12 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
           background: white;
           border-bottom: 1px solid #e1e3e5;
           margin-bottom: 24px;
+        }
+
+        .header-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 16px;
         }
 
         .section-header {

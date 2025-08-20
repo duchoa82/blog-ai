@@ -144,10 +144,12 @@ export default function BlogGenerationPage() {
       {/* Header */}
       <div className="page-header">
         <ui-title-bar title="AI Blog Generation">
+        </ui-title-bar>
+        <div className="header-actions">
           <ui-button variant="primary" onClick={handleGenerateBlog} disabled={isGenerating}>
             {isGenerating ? 'Generating...' : 'Generate Blog'}
           </ui-button>
-        </ui-title-bar>
+        </div>
       </div>
 
       <ui-layout>
@@ -332,6 +334,12 @@ export default function BlogGenerationPage() {
           background: white;
           border-bottom: 1px solid #e1e3e5;
           margin-bottom: 24px;
+        }
+
+        .header-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 16px;
         }
 
         .configuration-form {

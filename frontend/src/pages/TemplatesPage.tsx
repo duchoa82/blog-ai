@@ -3,9 +3,25 @@ import React from 'react';
 export default function TemplatesPage() {
   return (
     <div>
-      <ui-title-bar title="Blog Templates">
-        <button variant="primary">Create New Template</button>
-      </ui-title-bar>
+      <div className="page-header">
+        <ui-title-bar title="Blog Templates">
+        </ui-title-bar>
+        <div className="header-actions">
+          <ui-button variant="primary">Create New Template</ui-button>
+        </div>
+      </div>
+      
+      <style>{`
+        .page-header {
+          margin-bottom: 24px;
+        }
+
+        .header-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 16px;
+        }
+      `}</style>
       
       <ui-layout>
         <ui-layout-section>

@@ -33,11 +33,27 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <ui-title-bar title="App Settings">
-        <button variant="primary" onClick={openModal}>
-          Edit Settings
-        </button>
-      </ui-title-bar>
+      <div className="page-header">
+        <ui-title-bar title="App Settings">
+        </ui-title-bar>
+        <div className="header-actions">
+          <ui-button variant="primary" onClick={openModal}>
+            Edit Settings
+          </ui-button>
+        </div>
+      </div>
+      
+      <style>{`
+        .page-header {
+          margin-bottom: 24px;
+        }
+
+        .header-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 16px;
+        }
+      `}</style>
       
       <ui-layout>
         <ui-layout-section>

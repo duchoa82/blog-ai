@@ -55,5 +55,9 @@ declare namespace JSX {
       expanded?: boolean;
     };
     'ui-nav-menu': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    'ui-toggle': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+      checked?: boolean;
+      onChange?: (event: React.ChangeEvent<HTMLElement>) => void;
+    };
   }
 }
