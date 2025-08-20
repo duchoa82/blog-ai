@@ -4,19 +4,21 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files first
 COPY package*.json ./
 COPY frontend/package*.json ./frontend/
 
-# Install dependencies
+# Install root dependencies
 RUN npm install
-RUN cd frontend && npm install
 
-# Copy source code
+# Copy frontend source files
+COPY frontend/ ./frontend/
+
+# Install frontend dependencies and build
+RUN cd frontend && npm install && npm run build
+
+# Copy remaining files (if any)
 COPY . .
-
-# Build frontend
-RUN cd frontend && npm run build
 
 # Expose port
 EXPOSE 3000
