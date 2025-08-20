@@ -7,18 +7,41 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+*/node_modules
+
+# Build outputs
 dist
 dist-ssr
+*/dist
+*/dist-ssr
 *.local
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Lock files (keep only one)
+bun.lockb

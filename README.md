@@ -1,12 +1,16 @@
-# Blog AI Backend API
+# Blog SEO AI - Shopify App
 
-Shopify Backend API for Blog AI App with OAuth flow.
+Shopify app for AI-powered blog content creation and SEO optimization.
 
 ## 🚀 Quick Start
 
 ### 1. Install Dependencies
 ```bash
+# Install root dependencies
 npm install
+
+# Install frontend dependencies
+cd frontend && npm install
 ```
 
 ### 2. Environment Variables
@@ -15,67 +19,77 @@ Copy `env.example` to `.env` and fill in your values:
 cp env.example .env
 ```
 
-### 3. Start Server
+### 3. Start Development Server
 ```bash
+# Start frontend development server
+npm run dev
+
+# Start production server
 npm start
 ```
 
-## 🔑 OAuth Flow
+## 🏗️ Project Structure
 
-### 1. Initiate OAuth
 ```
-GET /auth/shopify?shop=your-shop.myshopify.com
+blog-seo-ai-main/
+├── frontend/                 # React + Vite frontend
+│   ├── src/                 # Source code
+│   │   ├── components/      # React components
+│   │   ├── pages/          # Page components
+│   │   └── App.tsx         # Main app component
+│   ├── lib/                # Utilities and shared data
+│   └── services/           # API services
+├── docs/                   # Documentation files
+├── scripts/                # Utility scripts
+├── server-mock.js          # Simple production server
+└── package.json            # Root package configuration
 ```
-
-### 2. Shopify Redirect
-User will be redirected to Shopify for authorization.
-
-### 3. OAuth Callback
-```
-GET /auth/shopify/callback
-```
-
-## 📡 API Endpoints
-
-- `GET /` - API status
-- `GET /healthz` - Health check
-- `GET /test` - Test endpoint
-- `GET /auth/shopify` - OAuth initiation
-- `GET /auth/shopify/callback` - OAuth callback
 
 ## 🛠️ Tech Stack
 
+### Frontend
+- **React 18** - UI framework
+- **Vite** - Build tool
+- **TypeScript** - Type safety
+- **Shopify Polaris** - Design system
+- **Shopify App Bridge** - Shopify integration
+- **React Router** - Navigation
+- **React Query** - Data fetching
+
+### Backend
 - **Express.js** - Web framework
-- **Shopify API v7.x** - Stable Shopify integration
-- **MemorySessionStorage** - Simple session management
-- **CORS** - Cross-origin support
+- **Node.js** - Runtime environment
 
 ## 🔧 Configuration
 
 ### Shopify App Setup
 1. **App Scopes:** `read_products,write_products,read_blog,write_blog`
-2. **Redirect URL:** `https://blog-ai-be.up.railway.app/auth/shopify/callback`
-3. **API Version:** `2025-07`
+2. **Redirect URL:** Configure in your Shopify app settings
+3. **API Version:** Latest stable version
 
 ### Environment Variables
-- `SHOPIFY_API_KEY` - Your app API key
-- `SHOPIFY_API_SECRET` - Your app secret
-- `SHOPIFY_SCOPES` - App permissions
-- `SHOPIFY_APP_URL` - Backend domain
-- `FRONTEND_URL` - Frontend domain for CORS
+- `VITE_SHOPIFY_API_KEY` - Your app API key
+- `VITE_SHOPIFY_API_SECRET` - Your app secret
 
 ## 🚀 Deployment
 
 ### Railway
-1. Create new service: `blog-ai-be`
-2. Connect GitHub repository
-3. Set environment variables
-4. Deploy!
+1. Connect GitHub repository
+2. Set environment variables
+3. Build Command: `npm install && npm run build`
+4. Start Command: `npm run start`
 
-## 📝 Next Steps
+## 📝 Features
 
-After OAuth flow works:
-1. Add Redis session storage
-2. Implement GraphQL Admin API endpoints
-3. Implement Storefront API endpoints
-4. Add rate limiting and error handling
+- AI-powered blog content generation
+- SEO optimization tools
+- Shopify integration
+- Modern React architecture
+- TypeScript support
+- Responsive design
+
+## 🔍 Development
+
+- `npm run dev` - Start frontend development server
+- `npm run build` - Build frontend for production
+- `npm start` - Start production server
