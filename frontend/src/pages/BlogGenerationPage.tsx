@@ -62,10 +62,10 @@ export default function BlogGenerationPage() {
   const [keywordsTags, setKeywordsTags] = useState<string[]>([]);
   
   const [contentDetails, setContentDetails] = useState({
-    keywords: '',
-    postTitle: '',
+    keywords: 'summer fashion, t-shirts, 2025 trends',
+    postTitle: 'Summer T-Shirt Trends 2025',
     selectedProduct: '',
-    blogUrl: '',
+    blogUrl: 'summer-t-shirt-trends-2025',
     blogContent: `<h2>The Evolution of Summer T-Shirts: From Basic to Trendsetting</h2>
 <p>As we approach Summer 2025, the fashion landscape is evolving with exciting new trends that promise to redefine casual elegance. T-shirts, once considered basic wardrobe staples, are now at the forefront of innovative design and sustainable fashion movements.</p>
 
@@ -988,12 +988,36 @@ export default function BlogGenerationPage() {
         <ui-modal id="blog-editor-modal" variant="max" {...({} as any)}>
           {/* Title Bar */}
           <ui-title-bar title="Blog Editor">
-            <Button variant="primary" onClick={handlePublishBlog}>
+            <button 
+              style={{
+                backgroundColor: '#008060',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+              onClick={handlePublishBlog}
+            >
               Publish Blog
-            </Button>
-            <Button variant="secondary" onClick={() => setShowBlogEditor(false)}>
+            </button>
+            <button 
+              style={{
+                backgroundColor: 'transparent',
+                color: '#202223',
+                border: '1px solid #c9cccf',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+              onClick={() => setShowBlogEditor(false)}
+            >
               Cancel
-            </Button>
+            </button>
           </ui-title-bar>
           
           <div className="blog-editor-content">
