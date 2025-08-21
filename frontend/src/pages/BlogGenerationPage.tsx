@@ -989,31 +989,13 @@ export default function BlogGenerationPage() {
           {/* Title Bar */}
           <ui-title-bar title="Blog Editor">
             <button 
-              style={{
-                backgroundColor: '#008060',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}
+              className="shopify-button-primary"
               onClick={handlePublishBlog}
             >
               Publish Blog
             </button>
             <button 
-              style={{
-                backgroundColor: 'transparent',
-                color: '#202223',
-                border: '1px solid #c9cccf',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500'
-              }}
+              className="shopify-button-secondary"
               onClick={() => setShowBlogEditor(false)}
             >
               Cancel

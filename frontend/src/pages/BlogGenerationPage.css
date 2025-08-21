@@ -392,3 +392,37 @@
     padding: 14px 24px;
   }
 }
+
+/* Shopify Button Styles for ui-title-bar */
+.shopify-button-primary {
+  background-color: #008060 !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.shopify-button-primary:hover {
+  background-color: #006e52 !important;
+}
+
+.shopify-button-secondary {
+  background-color: transparent !important;
+  color: #202223 !important;
+  border: 1px solid #c9cccf !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.shopify-button-secondary:hover {
+  background-color: #f6f6f7 !important;
+  border-color: #8c9196 !important;
+}
