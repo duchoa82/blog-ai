@@ -8,6 +8,8 @@ import BlogGenerationPage from './pages/BlogGenerationPage';
 import TemplatesPage from './pages/TemplatesPage';
 import PricingPage from './pages/PricingPage';
 import SettingsPage from './pages/SettingsPage';
+import ShopifyAuth from './pages/ShopifyAuth';
+import AuthCallback from './pages/AuthCallback';
 
 export default function App() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
             <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/auth" element={<ShopifyAuth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
           </Routes>
         </div>
       </BrowserRouter>

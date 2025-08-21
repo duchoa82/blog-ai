@@ -98,6 +98,71 @@
   border: 1px solid #e1e3e5;
 }
 
+/* Blog Editor Modal - Using Shopify variant="max" */
+#blog-editor-modal {
+  /* Shopify variant="max" handles the sizing automatically */
+}
+
+/* Modal Content Layout */
+.blog-editor-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.blog-editor-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  width: 100%;
+}
+
+.blog-editor-sidebar {
+  width: 400px;
+  min-width: 400px;
+  border-right: 1px solid #e1e3e5;
+  background-color: #fafbfc;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.blog-editor-main-content {
+  flex: 1;
+  padding: 0;
+  margin: 0 auto;
+  overflow-y: auto;
+  background-color: white;
+  min-width: 0; /* Allow flex item to shrink */
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .blog-editor-sidebar {
+    width: 350px;
+    min-width: 350px;
+  }
+}
+
+@media (max-width: 768px) {
+  .blog-editor-main {
+    flex-direction: column;
+  }
+  
+  .blog-editor-sidebar {
+    width: 100%;
+    min-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e1e3e5;
+    max-height: 40vh;
+  }
+  
+  .blog-editor-main-content {
+    flex: 1;
+    min-height: 60vh;
+  }
+}
+
 .content-form {
   margin-top: 24px;
 }

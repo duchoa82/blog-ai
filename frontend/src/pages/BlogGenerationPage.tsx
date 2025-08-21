@@ -25,6 +25,7 @@ import { TitleBar } from '@shopify/app-bridge/actions';
 import './BlogGenerationPage.css';
 import shopifyBlogService, { BlogData } from '../services/shopifyBlogService';
 import shopConfigService from '../services/shopConfigService';
+import shopifySessionService from '../services/shopifySessionService';
 
 export default function BlogGenerationPage() {
   const navigate = useNavigate();
@@ -182,6 +183,7 @@ export default function BlogGenerationPage() {
     isConnecting: false,
     connectionError: '',
     shopName: '',
+    currentShop: '',
   });
 
   // Initialize original content when modal opens
@@ -196,36 +198,73 @@ export default function BlogGenerationPage() {
   useEffect(() => {
     const initializeShopConfig = async () => {
       try {
-        const config = shopConfigService.getConfig();
-        if (config && shopConfigService.isConfigValid()) {
-          // Initialize Shopify Blog Service
-          shopifyBlogService.initialize(
-            config.storeDomain,
-            config.accessToken,
-            config.apiVersion
-          );
+        // Lấy shop hiện tại từ URL hoặc session
+        const currentShop = shopifySessionService.getCurrentShop();
+        
+        if (currentShop) {
+          // Kiểm tra session có hợp lệ không
+          const session = shopifySessionService.getSession(currentShop);
           
-          setShopConfig(prev => ({
-            ...prev,
-            isConfigured: true,
-            shopName: config.shopName || 'Unknown Shop',
-          }));
-
-          // Test connection
-          setShopConfig(prev => ({ ...prev, isConnecting: true }));
-          const connectionResult = await shopConfigService.testConnection();
-          
-          if (connectionResult.success) {
+          if (session) {
+            // Initialize Shopify API client với session
+            shopifyBlogService.initialize(
+              currentShop,
+              session.accessToken,
+              '2025-01'
+            );
+            
             setShopConfig(prev => ({
               ...prev,
-              isConnecting: false,
-              connectionError: '',
+              isConfigured: true,
+              shopName: session.shopName || currentShop.replace('.myshopify.com', ''),
+              currentShop,
+            }));
+            
+            // Test connection
+            setShopConfig(prev => ({ ...prev, isConnecting: true }));
+            try {
+              // Test với shop info
+              const shopInfo = await shopifyBlogService.getClientInfo();
+              setShopConfig(prev => ({
+                ...prev,
+                isConnecting: false,
+                connectionError: '',
+              }));
+            } catch (error) {
+              setShopConfig(prev => ({
+                ...prev,
+                isConnecting: false,
+                connectionError: 'Failed to connect to store',
+              }));
+            }
+          } else {
+            // Không có session hợp lệ
+            setShopConfig(prev => ({
+              ...prev,
+              isConfigured: false,
+              currentShop,
+              connectionError: 'Please install the app first',
+            }));
+          }
+        } else {
+          // Fallback: dùng config cũ nếu có
+          const config = shopConfigService.getConfig();
+          if (config && shopConfigService.isConfigValid()) {
+            shopifyBlogService.initialize(
+              config.storeDomain,
+              config.accessToken,
+              config.apiVersion
+            );
+            setShopConfig(prev => ({
+              ...prev,
+              isConfigured: false,
+              connectionError: 'No shop configured. Please install the app.',
             }));
           } else {
             setShopConfig(prev => ({
               ...prev,
-              isConnecting: false,
-              connectionError: connectionResult.error || 'Connection failed',
+              isConfigured: false,
+              connectionError: 'No shop configured. Please install the app.',
             }));
           }
         }
@@ -945,19 +984,23 @@ export default function BlogGenerationPage() {
           </div>
         )}
 
-        {/* Blog Editor Modal - Using Shopify ui-modal */}
-        <ui-modal id="blog-editor-modal">
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {/* Blog Editor Modal - Using Shopify ui-modal with max variant */}
+        <ui-modal id="blog-editor-modal" variant="max" {...({} as any)}>
+          {/* Title Bar */}
+          <ui-title-bar title="Blog Editor">
+            <Button variant="primary" onClick={handlePublishBlog}>
+              Publish Blog
+            </Button>
+            <Button variant="secondary" onClick={() => setShowBlogEditor(false)}>
+              Cancel
+            </Button>
+          </ui-title-bar>
+          
+          <div className="blog-editor-content">
             {/* Main Content */}
-            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            <div className="blog-editor-main">
               {/* Left Sidebar - Post Settings */}
-              <div style={{
-                width: '320px',
-                borderRight: '1px solid #e1e3e5',
-                backgroundColor: '#fafbfc',
-                overflowY: 'auto',
-                padding: '20px'
-              }}>
+              <div className="blog-editor-sidebar">
                 <div style={{ marginBottom: '24px' }}>
                   <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: '#202223' }}>Post</div>
                   
@@ -1124,13 +1167,7 @@ export default function BlogGenerationPage() {
               </div>
 
               {/* Right Section - Blog Post Preview */}
-              <div style={{
-                flex: 1,
-                padding: '0',
-                margin: '0 auto',
-                overflowY: 'auto',
-                backgroundColor: 'white'
-              }}>
+              <div className="blog-editor-main-content">
                 {/* Rich Text Editor - Full Width & Floating */}
                 <div style={{ 
                   width: '100%',
@@ -1656,11 +1693,7 @@ export default function BlogGenerationPage() {
             </ui-save-bar>
           )}
           
-          {/* Modal Title Bar */}
-          <ui-title-bar>
-            <button onClick={handlePublishBlog}>Publish</button>
-            <button>Preview</button>
-          </ui-title-bar>
+          {/* Modal Title Bar - Removed duplicate, using main title bar instead */}
         </ui-modal>
 
         {/* Image Library Modal */}
