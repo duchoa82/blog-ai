@@ -1,0 +1,68 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+name: CI
+
+env:
+  DISABLE_V8_COMPILE_CACHE: 1
+
+jobs:
+  CI:
+    name: CI_Node_${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # When removing v18, unpin graphql-config version
+        version: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+      - uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3.9.1
+        with:
+          cache: 'pnpm'
+          node-version: ${{ matrix.version }}
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run package tests
+        run: pnpm test:ci
+
+      - name: Run linting
+        run: pnpm lint
+
+      - name: Run Drizzle adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-drizzle
+
+      - name: Run DynamoDB adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-dynamodb
+
+      - name: Run KV adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-kv
+
+      - name: Run Memory adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-memory
+
+      - name: Run MongoDB adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-mongodb
+
+      - name: Run MySQL adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-mysql
+
+      - name: Run PostgreSQL adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-postgresql
+
+      - name: Run Prisma adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-prisma
+
+      - name: Run Redis adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-redis
+
+      - name: Run SQLite adapter tests
+        run: pnpm test:ci_sessions --filter=./packages/apps/session-storage/shopify-app-session-storage-sqlite

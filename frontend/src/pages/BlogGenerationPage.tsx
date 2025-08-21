@@ -103,6 +103,17 @@ export default function BlogGenerationPage() {
   const [showBlogEditor, setShowBlogEditor] = useState(false);
   const [showTitleDropdown, setShowTitleDropdown] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showImageLibraryModal, setShowImageLibraryModal] = useState(false);
+  
+  // Track changes for save functionality
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [originalContentDetails, setOriginalContentDetails] = useState({
+    keywords: '',
+    postTitle: '',
+    selectedProduct: '',
+    blogUrl: '',
+    blogContent: ''
+  });
 
   // Keywords tag management functions
   const handleKeywordsChange = (value: string) => {
@@ -137,6 +148,93 @@ export default function BlogGenerationPage() {
       ...prev,
       keywords: newTags.join(', ')
     }));
+    setHasUnsavedChanges(true);
+  };
+
+  // Handle content changes and track unsaved changes
+  const handleContentDetailsChange = (field: string, value: string) => {
+    setContentDetails(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setHasUnsavedChanges(true);
+  };
+
+  // Save changes
+  const handleSaveChanges = () => {
+    setOriginalContentDetails({ ...contentDetails });
+    setHasUnsavedChanges(false);
+    console.log('Changes saved successfully');
+  };
+
+  // Cancel changes
+  const handleCancelChanges = () => {
+    setContentDetails({ ...originalContentDetails });
+    setHasUnsavedChanges(false);
+    console.log('Changes cancelled');
+  };
+
+  // Initialize original content when modal opens
+  useEffect(() => {
+    if (showBlogEditor) {
+      setOriginalContentDetails({ ...contentDetails });
+      setHasUnsavedChanges(false);
+    }
+  }, [showBlogEditor]);
+
+  // Publish blog post to Shopify store
+  const handlePublishBlog = async () => {
+    try {
+      console.log('Publishing blog post...');
+      
+      // Get visibility setting from form
+      const visibilityInput = document.querySelector('input[name="visibility"]:checked') as HTMLInputElement;
+      const isPublished = visibilityInput?.value === 'visible';
+      
+      // Prepare blog data for Shopify API
+      const blogData = {
+        blog: {
+          title: contentDetails.postTitle,
+          body_html: contentDetails.blogContent,
+          published: isPublished,
+          // Add other required fields based on Shopify API
+          handle: contentDetails.blogUrl || generateHandle(contentDetails.postTitle),
+          tags: keywordsTags.join(', '),
+          // TODO: Add featured image when implemented
+        }
+      };
+
+      console.log('Blog data to publish:', blogData);
+
+      // TODO: Call Shopify Admin API
+      // POST /admin/api/2025-01/blogs.json
+      // const response = await fetch('/admin/api/2025-01/blogs.json', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'X-Shopify-Access-Token': accessToken
+      //   },
+      //   body: JSON.stringify(blogData)
+      // });
+
+      // For now, simulate success
+      alert(`Blog post ${isPublished ? 'published' : 'saved as draft'} successfully!`);
+      setShowBlogEditor(false);
+      
+    } catch (error) {
+      console.error('Error publishing blog:', error);
+      alert('Failed to publish blog post. Please try again.');
+    }
+  };
+
+  // Generate URL handle from title
+  const generateHandle = (title: string) => {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
   };
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -294,12 +392,7 @@ export default function BlogGenerationPage() {
     }));
   };
 
-  const handleContentDetailsChange = (field: string, value: string) => {
-    setContentDetails(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+
 
   const handleEditField = (field: string) => {
     console.log('Editing field:', field);
@@ -543,9 +636,10 @@ export default function BlogGenerationPage() {
                   variant="primary"
                   onClick={() => {
                     console.log('Generate button clicked!');
-                    console.log('Current showBlogEditor state:', showBlogEditor);
-                    setShowBlogEditor(true);
-                    console.log('After setShowBlogEditor(true)');
+                    const modal = document.getElementById('blog-editor-modal');
+                    if (modal) {
+                      (modal as any).show();
+                    }
                   }}
                 >
                   ⭐ Generate
@@ -729,36 +823,9 @@ export default function BlogGenerationPage() {
           </div>
         )}
 
-        {/* Blog Editor Fullwidth Modal */}
-        {showBlogEditor && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'white',
-            zIndex: 1000,
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            {/* Header */}
-            <div style={{
-              padding: '16px 24px',
-              borderBottom: '1px solid #e1e3e5',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              backgroundColor: '#fafbfc'
-            }}>
-              <div style={{ fontSize: '18px', fontWeight: '600' }}>Tapita AI SEO Blog</div>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <Button variant="secondary" size="slim">Preview</Button>
-                <Button variant="primary" size="slim">Publish</Button>
-                <Button variant="plain" onClick={() => setShowBlogEditor(false)}>✕</Button>
-              </div>
-            </div>
-
+        {/* Blog Editor Modal - Using Shopify ui-modal */}
+        <ui-modal id="blog-editor-modal">
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             {/* Main Content */}
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
               {/* Left Sidebar - Post Settings */}
@@ -793,18 +860,43 @@ export default function BlogGenerationPage() {
                     <Button variant="secondary" size="slim">Generate with AI</Button>
                     <div style={{
                       width: '100%',
-                      height: '120px',
+                      height: '200px',
                       border: '2px dashed #c9cccf',
-                      borderRadius: '4px',
+                      borderRadius: '8px',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: '#f6f6f7',
-                      marginBottom: '8px'
+                      marginBottom: '8px',
+                      gap: '8px'
                     }}>
-                      <div style={{ fontSize: '12px', color: '#6d7175', marginBottom: '4px' }}>Upload file</div>
-                      <div style={{ fontSize: '12px', color: '#6d7175' }}>Select from library</div>
+                      <Button 
+                        variant="secondary" 
+                        size="slim"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (file) {
+                              console.log('File selected:', file.name);
+                              // TODO: Handle file upload
+                            }
+                          };
+                          input.click();
+                        }}
+                      >
+                        ↑ Upload file
+                      </Button>
+                      <Button 
+                        variant="secondary" 
+                        size="slim"
+                        onClick={() => setShowImageLibraryModal(true)}
+                      >
+                        Select from library
+                      </Button>
                     </div>
                     <TextField
                       label="or Insert image URL"
@@ -1430,6 +1522,125 @@ export default function BlogGenerationPage() {
                 </div>
 
 
+              </div>
+            </div>
+          </div>
+          
+          {/* Save Bar - Show when there are unsaved changes */}
+          {hasUnsavedChanges && (
+            <ui-save-bar id="blog-editor-save-bar">
+              <button onClick={handleSaveChanges}>Save changes</button>
+              <button onClick={handleCancelChanges}>Cancel</button>
+            </ui-save-bar>
+          )}
+          
+          {/* Modal Title Bar */}
+          <ui-title-bar>
+            <button onClick={handlePublishBlog}>Publish</button>
+            <button>Preview</button>
+          </ui-title-bar>
+        </ui-modal>
+
+        {/* Image Library Modal */}
+        {showImageLibraryModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 2000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '24px',
+              maxWidth: '800px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflowY: 'auto'
+            }}>
+              {/* Modal Header */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                paddingBottom: '16px',
+                borderBottom: '1px solid #e1e3e5'
+              }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>Select Image from Library</h2>
+                  <p style={{ margin: '8px 0 0 0', color: '#6d7175', fontSize: '14px' }}>Choose an image from your store's media library</p>
+                </div>
+                <button 
+                  onClick={() => setShowImageLibraryModal(false)}
+                  style={{
+                    padding: '8px',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '18px'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {/* Image Grid */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gap: '16px',
+                marginBottom: '20px'
+              }}>
+                {/* Mock Images - Replace with actual store images */}
+                {[1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12].map((num) => (
+                  <div
+                    key={num}
+                    onClick={() => {
+                      console.log('Image selected:', num);
+                      setShowImageLibraryModal(false);
+                      // TODO: Set selected image
+                    }}
+                    style={{
+                      width: '150px',
+                      height: '150px',
+                      backgroundColor: '#f6f6f7',
+                      border: '2px solid #e1e3e5',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      fontSize: '24px',
+                      color: '#6d7175',
+                      transition: 'border-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#008060';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e1e3e5';
+                    }}
+                  >
+                    🖼️ {num}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <Button variant="secondary" onClick={() => setShowImageLibraryModal(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={() => setShowImageLibraryModal(false)}>
+                  Select Image
+                </Button>
               </div>
             </div>
           </div>
