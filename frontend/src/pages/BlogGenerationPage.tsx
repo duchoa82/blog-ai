@@ -23,6 +23,8 @@ import createApp from '@shopify/app-bridge';
 import { TitleBar } from '@shopify/app-bridge/actions';
 // import PageHeader from '../components/layout/PageHeader';
 import './BlogGenerationPage.css';
+import shopifyBlogService, { BlogData } from '../services/shopifyBlogService';
+import shopConfigService from '../services/shopConfigService';
 
 export default function BlogGenerationPage() {
   const navigate = useNavigate();
@@ -174,6 +176,14 @@ export default function BlogGenerationPage() {
     console.log('Changes cancelled');
   };
 
+  // Shop configuration state
+  const [shopConfig, setShopConfig] = useState({
+    isConfigured: false,
+    isConnecting: false,
+    connectionError: '',
+    shopName: '',
+  });
+
   // Initialize original content when modal opens
   useEffect(() => {
     if (showBlogEditor) {
@@ -182,48 +192,116 @@ export default function BlogGenerationPage() {
     }
   }, [showBlogEditor]);
 
+  // Initialize shop configuration
+  useEffect(() => {
+    const initializeShopConfig = async () => {
+      try {
+        const config = shopConfigService.getConfig();
+        if (config && shopConfigService.isConfigValid()) {
+          // Initialize Shopify Blog Service
+          shopifyBlogService.initialize(
+            config.storeDomain,
+            config.accessToken,
+            config.apiVersion
+          );
+          
+          setShopConfig(prev => ({
+            ...prev,
+            isConfigured: true,
+            shopName: config.shopName || 'Unknown Shop',
+          }));
+
+          // Test connection
+          setShopConfig(prev => ({ ...prev, isConnecting: true }));
+          const connectionResult = await shopConfigService.testConnection();
+          
+          if (connectionResult.success) {
+            setShopConfig(prev => ({
+              ...prev,
+              isConnecting: false,
+              connectionError: '',
+            }));
+          } else {
+            setShopConfig(prev => ({
+              ...prev,
+              isConnecting: false,
+              connectionError: connectionResult.error || 'Connection failed',
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing shop configuration:', error);
+        setShopConfig(prev => ({
+          ...prev,
+          isConfigured: false,
+          connectionError: error instanceof Error ? error.message : 'Unknown error',
+        }));
+      }
+    };
+
+    initializeShopConfig();
+  }, []);
+
   // Publish blog post to Shopify store
   const handlePublishBlog = async () => {
     try {
       console.log('Publishing blog post...');
+      
+      // Check if shop is configured
+      if (!shopConfig.isConfigured) {
+        alert('Shop not configured. Please configure your Shopify store first.');
+        return;
+      }
+
+      if (shopConfig.connectionError) {
+        alert(`Shop connection error: ${shopConfig.connectionError}. Please check your configuration.`);
+        return;
+      }
       
       // Get visibility setting from form
       const visibilityInput = document.querySelector('input[name="visibility"]:checked') as HTMLInputElement;
       const isPublished = visibilityInput?.value === 'visible';
       
       // Prepare blog data for Shopify API
-      const blogData = {
+      const blogData: BlogData = {
         blog: {
           title: contentDetails.postTitle,
           body_html: contentDetails.blogContent,
           published: isPublished,
-          // Add other required fields based on Shopify API
           handle: contentDetails.blogUrl || generateHandle(contentDetails.postTitle),
           tags: keywordsTags.join(', '),
+          meta_title: contentDetails.postTitle,
+          meta_description: contentDetails.blogContent.substring(0, 160), // First 160 chars
           // TODO: Add featured image when implemented
         }
       };
 
       console.log('Blog data to publish:', blogData);
 
-      // TODO: Call Shopify Admin API
-      // POST /admin/api/2025-01/blogs.json
-      // const response = await fetch('/admin/api/2025-01/blogs.json', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //     'X-Shopify-Access-Token': accessToken
-      //   },
-      //   body: JSON.stringify(blogData)
-      // });
+      // Show loading state
+      setShopConfig(prev => ({ ...prev, isConnecting: true }));
 
-      // For now, simulate success
-      alert(`Blog post ${isPublished ? 'published' : 'saved as draft'} successfully!`);
+      // Call Shopify Admin API using the service
+      const response = await shopifyBlogService.createBlog(blogData);
+      
+      console.log('Blog published successfully:', response);
+
+      // Hide loading state
+      setShopConfig(prev => ({ ...prev, isConnecting: false }));
+
+      // Show success message
+      alert(`Blog post "${response.blog.title}" ${isPublished ? 'published' : 'saved as draft'} successfully!`);
       setShowBlogEditor(false);
       
     } catch (error) {
       console.error('Error publishing blog:', error);
-      alert('Failed to publish blog post. Please try again.');
+      
+      // Hide loading state
+      setShopConfig(prev => ({ ...prev, isConnecting: false }));
+      
+      // Show error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to publish blog post: ${errorMessage}`);
     }
   };
 
@@ -434,6 +512,50 @@ export default function BlogGenerationPage() {
             <h1 className="page-title">AI Blog Generation</h1>
           </div>
         </div>
+      </div>
+
+      {/* Shop Configuration Status */}
+      <div className="shop-config-status" style={{ marginBottom: '24px' }}>
+        <Card>
+          <div style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '500' }}>
+                  Shopify Store Connection
+                </h3>
+                <div style={{ fontSize: '14px', color: '#6d7175' }}>
+                  {shopConfig.isConfigured ? (
+                    <>
+                      Connected to: <strong>{shopConfig.shopName}</strong>
+                      {shopConfig.connectionError && (
+                        <span style={{ color: '#d82c0d', marginLeft: '8px' }}>
+                          ⚠️ {shopConfig.connectionError}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    'Not configured - Please configure your Shopify store to publish blogs'
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {shopConfig.isConnecting && (
+                  <div style={{ fontSize: '14px', color: '#6d7175' }}>Connecting...</div>
+                )}
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: shopConfig.isConfigured && !shopConfig.connectionError 
+                    ? '#50b83c' 
+                    : shopConfig.isConfigured 
+                    ? '#f49342' 
+                    : '#d82c0d'
+                }} />
+              </div>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Main Content */}
