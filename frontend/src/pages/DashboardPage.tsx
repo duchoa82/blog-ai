@@ -134,7 +134,22 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
         <button id="discard-brand-voice-button">Discard</button>
       </ui-save-bar>
 
-      {/* Page Header - App Bridge TitleBar will be mounted here */}
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="header-content">
+          <div className="header-left">
+            <h1 className="page-title">Dashboard</h1>
+          </div>
+          <div className="header-right">
+            <Button 
+              variant="primary"
+              onClick={() => navigate('/generate')}
+            >
+              Generate Blog Post
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="main-content">
@@ -273,6 +288,23 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
                 </div>
                 </div>
                              </div>
+                
+                {/* Action Button for Brand Voice Setup */}
+                <div style={{ 
+                  marginTop: '24px', 
+                  paddingTop: '16px', 
+                  borderTop: '1px solid #e1e3e5',
+                  display: 'flex',
+                  justifyContent: 'center'
+                }}>
+                  <Button 
+                    variant="primary" 
+                    onClick={() => navigate('/generate')}
+                    size="large"
+                  >
+                    Generate Blog Post
+                  </Button>
+                </div>
                 </div>
               )}
          </div>
@@ -289,7 +321,13 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
               <div className="card-icon">✍️</div>
               <h3>Generate Blog Post</h3>
               <p>Create AI-powered blog content from your products.</p>
-              <a href="/generate" className="get-started-link">Get Started</a>
+              <Button 
+                variant="primary" 
+                onClick={() => navigate('/generate')}
+                size="slim"
+              >
+                Generate Blog Post
+              </Button>
             </div>
             
             <div className="action-card">

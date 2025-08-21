@@ -294,7 +294,14 @@ export default function BlogGenerationPage() {
 
   return (
     <div className="blog-generation-page">
-      {/* Page Header - App Bridge TitleBar will be mounted here */}
+      {/* Page Header */}
+      <div className="page-header">
+        <div className="header-content">
+          <div className="header-left">
+            <h1 className="page-title">AI Blog Generation</h1>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="main-content">
