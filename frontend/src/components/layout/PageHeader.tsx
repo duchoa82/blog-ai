@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '@shopify/polaris';
 import './PageHeader.css';
 
 interface PageHeaderProps {
@@ -33,12 +34,12 @@ export default function PageHeader({
         </div>
         {showButton && buttonText && (
           <div className="header-right">
-            <button 
-              className={`polaris-button polaris-button--${buttonVariant}`}
+            <Button 
+              variant={buttonVariant}
               onClick={handleButtonClick}
             >
               {buttonText}
-            </button>
+            </Button>
           </div>
         )}
       </div>

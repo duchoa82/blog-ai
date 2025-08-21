@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronUpIcon, ChevronDownIcon } from '@shopify/polaris-icons';
-import { Select, TextContainer } from '@shopify/polaris';
-import PageHeader from '../components/layout/PageHeader';
+import { Select, TextContainer, Button } from '@shopify/polaris';
+import createApp from '@shopify/app-bridge';
+import { TitleBar } from '@shopify/app-bridge/actions';
+// import PageHeader from '../components/layout/PageHeader';
 import './DashboardPage.css';
 
 interface DashboardPageProps {
@@ -13,6 +15,34 @@ interface DashboardPageProps {
 
 export default function DashboardPage({ shopInfo }: DashboardPageProps) {
   const navigate = useNavigate();
+  
+  // App Bridge setup
+  useEffect(() => {
+    const config = {
+      apiKey: import.meta.env.VITE_SHOPIFY_API_KEY || 'your-api-key',
+      host: new URLSearchParams(window.location.search).get('host') || '',
+      forceRedirect: true
+    };
+    
+    const app = createApp(config);
+    
+    // Create App Bridge title bar
+    const titleBar = TitleBar.create(app, {
+      title: 'Dashboard',
+      buttons: {
+        primary: {
+          label: 'Generate Blog Post',
+          onClick: () => navigate('/generate')
+        }
+      }
+    });
+    
+    // Mount title bar
+    titleBar.subscribe(TitleBar.Action.UPDATE, () => {
+      console.log('Title bar updated');
+    });
+  }, [navigate]);
+  
   const [brandVoice, setBrandVoice] = useState({
     brandName: '',
     targetAudience: '',
@@ -35,24 +65,29 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
   const handleSaveBrandVoice = () => {
     console.log('Saving brand voice:', brandVoice);
     setIsEditing(false);
+    // Hide save bar
+    const saveBar = document.getElementById('brand-voice-save-bar');
+    if (saveBar) {
+      saveBar.hide();
+    }
     // TODO: Implement save functionality
   };
 
   const handleEdit = () => {
     setIsEditing(true);
-    // Show save bar
+    // Show save bar using Shopify API
     const saveBar = document.getElementById('brand-voice-save-bar');
     if (saveBar) {
-      saveBar.style.display = 'flex';
+      saveBar.show();
     }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Hide save bar
+    // Hide save bar using Shopify API
     const saveBar = document.getElementById('brand-voice-save-bar');
     if (saveBar) {
-      saveBar.style.display = 'none';
+      saveBar.hide();
     }
     // TODO: Reset to original values
   };
@@ -61,14 +96,14 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
   React.useEffect(() => {
     const saveButton = document.getElementById('save-brand-voice-button');
     const discardButton = document.getElementById('discard-brand-voice-button');
-    const saveBar = document.getElementById('brand-voice-save-bar');
 
     if (saveButton) {
       saveButton.addEventListener('click', () => {
         console.log('Saving brand voice');
         handleSaveBrandVoice();
+        const saveBar = document.getElementById('brand-voice-save-bar');
         if (saveBar) {
-          saveBar.style.display = 'none';
+          saveBar.hide();
         }
       });
     }
@@ -93,13 +128,13 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
 
   return (
     <div className="dashboard-page">
-      {/* Page Header */}
-      <PageHeader 
-        title="Dashboard"
-        buttonText="Generate Blog Post"
-        buttonAction={() => navigate('/generate')}
-        buttonVariant="primary"
-      />
+      {/* Save Bar - Using Shopify Polaris Web Components */}
+      <ui-save-bar id="brand-voice-save-bar" style={{ display: 'none' }}>
+        <button variant="primary" id="save-brand-voice-button">Save</button>
+        <button id="discard-brand-voice-button">Discard</button>
+      </ui-save-bar>
+
+      {/* Page Header - App Bridge TitleBar will be mounted here */}
 
       {/* Main Content */}
       <div className="main-content">
@@ -113,9 +148,9 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
               </p>
             </div>
             <div className="header-right">
-              <button className="polaris-button polaris-button--secondary" onClick={handleEdit}>
+              <Button variant="secondary" onClick={handleEdit}>
                 Edit
-              </button>
+              </Button>
               <button 
                 className="accordion-toggle"
                 onClick={() => setIsBrandVoiceOpen(!isBrandVoiceOpen)}
@@ -238,14 +273,8 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
                 </div>
                 </div>
                              </div>
-             </div>
-           )}
-           
-           {/* Save Bar */}
-           <ui-save-bar id="brand-voice-save-bar" style={{ display: 'none' }}>
-             <button variant="primary" id="save-brand-voice-button">Save</button>
-             <button id="discard-brand-voice-button">Discard</button>
-           </ui-save-bar>
+                </div>
+              )}
          </div>
 
         {/* Quick Actions Section */}

@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card, 
   Layout, 
   Select, 
   TextField, 
-  Button, 
   TextContainer,
   Badge
 } from '@shopify/polaris';
@@ -18,11 +17,35 @@ import {
   LinkIcon, 
   ImageIcon 
 } from '@shopify/polaris-icons';
-import PageHeader from '../components/layout/PageHeader';
+import createApp from '@shopify/app-bridge';
+import { TitleBar } from '@shopify/app-bridge/actions';
+// import PageHeader from '../components/layout/PageHeader';
 import './BlogGenerationPage.css';
 
 export default function BlogGenerationPage() {
   const navigate = useNavigate();
+  
+  // App Bridge setup
+  useEffect(() => {
+    const config = {
+      apiKey: import.meta.env.VITE_SHOPIFY_API_KEY || 'your-api-key',
+      host: new URLSearchParams(window.location.search).get('host') || '',
+      forceRedirect: true
+    };
+    
+    const app = createApp(config);
+    
+    // Create App Bridge title bar (no buttons)
+    const titleBar = TitleBar.create(app, {
+      title: 'AI Blog Generation'
+    });
+    
+    // Mount title bar  
+    titleBar.subscribe(TitleBar.Action.UPDATE, () => {
+      console.log('Title bar updated');
+    });
+  }, []);
+  
   const [contentSettings, setContentSettings] = useState({
     styleVoice: 'conversational',
     depthLength: 'standard',
@@ -271,11 +294,7 @@ export default function BlogGenerationPage() {
 
   return (
     <div className="blog-generation-page">
-      {/* Page Header */}
-      <PageHeader 
-        title="AI Blog Generation"
-        showButton={false}
-      />
+      {/* Page Header - App Bridge TitleBar will be mounted here */}
 
       {/* Main Content */}
       <div className="main-content">
@@ -399,7 +418,7 @@ export default function BlogGenerationPage() {
 
 
 
-            {/* Post Title Section */}
+            {/* Blog Title Section */}
             <div style={{ marginTop: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <div style={{ 
@@ -407,17 +426,21 @@ export default function BlogGenerationPage() {
                   fontWeight: '500', 
                   color: '#202223'
                 }}>
-                  Post title
+                  Blog title
                 </div>
-                <Button variant="plain" url="#" size="slim">
+                <button 
+                  className="polaris-button polaris-button--plain"
+                  disabled={!contentDetails.keywords || contentDetails.keywords.trim() === ''}
+                  onClick={handleGenerateTitles}
+                >
                   Generate title
-                </Button>
+                </button>
               </div>
               <TextField
                 label=""
                 value={contentDetails.postTitle}
                 onChange={(value) => handleContentDetailsChange('postTitle', value)}
-                placeholder="Enter your post title"
+                placeholder="Enter your blog title"
                 autoComplete="off"
               />
             </div>
@@ -436,45 +459,175 @@ export default function BlogGenerationPage() {
             {/* Action Buttons */}
             <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #e1e3e5' }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button 
-                  variant="primary"
+                <button 
+                  className="polaris-button polaris-button--primary"
                   onClick={() => setShowBlogEditor(true)}
-                  icon="⭐"
                 >
-                  Generate
-                </Button>
+                  ⭐ Generate
+                </button>
               </div>
             </div>
           </div>
         </Card>
 
-        {/* Generated Titles Section */}
+        {/* Generated Titles Modal */}
         {generatedTitles.length > 0 && (
-          <div className="titles-section">
-            <div className="section-header">
-              <h2>Generated Blog Titles</h2>
-              <p>AI-generated titles based on your brand voice and content</p>
-            </div>
-            
-            <div className="titles-list">
-              {generatedTitles.map((title, index) => (
-                <div key={index} className={`title-item ${index === 0 ? 'recommended' : ''}`}>
-                  <div className="title-number">{index + 1}</div>
-                  <div className="title-content">
-                    <div className="title-text">{title}</div>
-                    <div className="title-pillar">
-                      {index === 0 && 'Educational / How-to'}
-                      {index === 1 && 'Industry Insights / Trends'}
-                      {index === 2 && 'Product-focused'}
-                      {index === 3 && 'Customer Stories / Testimonials'}
-                      {index === 4 && 'Opinion / Thought Leadership'}
-                      {index === 5 && 'Behind-the-scenes / Company Culture'}
-                      {index === 6 && 'Fun / Engaging / Light-hearted'}
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              padding: '24px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflowY: 'auto'
+            }}>
+              {/* Modal Header */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                paddingBottom: '16px',
+                borderBottom: '1px solid #e1e3e5'
+              }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>Generated Blog Titles</h2>
+                  <p style={{ margin: '8px 0 0 0', color: '#6d7175', fontSize: '14px' }}>AI-generated titles based on your brand voice and content</p>
+                </div>
+                <button className="polaris-button polaris-button--plain" onClick={() => setGeneratedTitles([])}>✕</button>
+              </div>
+              
+              {/* Titles List */}
+              <div style={{ marginBottom: '20px' }}>
+                {generatedTitles.map((title, index) => (
+                  <div key={index} style={{
+                    padding: '16px',
+                    border: '1px solid #e1e3e5',
+                    borderRadius: '6px',
+                    marginBottom: '12px',
+                    backgroundColor: index === 0 ? '#f6f6f7' : 'white',
+                    position: 'relative'
+                  }}>
+                    {/* Recommended Badge */}
+                    {index === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '-8px',
+                        right: '16px',
+                        backgroundColor: '#008060',
+                        color: 'white',
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '500'
+                      }}>
+                        Recommended
+                      </div>
+                    )}
+                    
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: index === 0 ? '#008060' : '#6d7175',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        flexShrink: 0
+                      }}>
+                        {index + 1}
+                      </div>
+                      
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: '16px',
+                          fontWeight: '500',
+                          marginBottom: '8px',
+                          color: '#202223'
+                        }}>
+                          {title}
+                        </div>
+                        <div style={{
+                          fontSize: '13px',
+                          color: '#6d7175',
+                          padding: '4px 8px',
+                          backgroundColor: '#f6f6f7',
+                          borderRadius: '4px',
+                          display: 'inline-block'
+                        }}>
+                          {index === 0 && 'Educational / How-to'}
+                          {index === 1 && 'Industry Insights / Trends'}
+                          {index === 2 && 'Product-focused'}
+                          {index === 3 && 'Customer Stories / Testimonials'}
+                          {index === 4 && 'Opinion / Thought Leadership'}
+                          {index === 5 && 'Behind-the-scenes / Company Culture'}
+                          {index === 6 && 'Fun / Engaging / Light-hearted'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '8px',
+                      marginTop: '16px',
+                      justifyContent: 'flex-end'
+                    }}>
+                      <Button 
+                        variant="secondary" 
+                        size="slim"
+                        onClick={() => {
+                          handleContentDetailsChange('postTitle', title);
+                          setGeneratedTitles([]);
+                        }}
+                      >
+                        Use This Title
+                      </Button>
                     </div>
                   </div>
-                  {index === 0 && <div className="recommended-badge">Recommended</div>}
-                </div>
-              ))}
+                ))}
+              </div>
+              
+              {/* Modal Footer */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '12px',
+                paddingTop: '16px',
+                borderTop: '1px solid #e1e3e5'
+              }}>
+                <button 
+                  className="polaris-button polaris-button--secondary"
+                  onClick={() => setGeneratedTitles([])}
+                >
+                  Close
+                </button>
+                <button 
+                  className="polaris-button polaris-button--primary"
+                  onClick={() => {
+                    handleContentDetailsChange('postTitle', recommendedTitle);
+                    setGeneratedTitles([]);
+                  }}
+                >
+                  Use Recommended Title
+                </button>
+              </div>
             </div>
           </div>
         )}

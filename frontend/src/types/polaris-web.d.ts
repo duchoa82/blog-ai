@@ -59,5 +59,9 @@ declare namespace JSX {
       checked?: boolean;
       onChange?: (event: React.ChangeEvent<HTMLElement>) => void;
     };
+    'ui-save-bar': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+      show?: () => void;
+      hide?: () => void;
+    };
   }
 }
