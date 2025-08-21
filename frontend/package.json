@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "vite preview --host 0.0.0.0 --port $PORT"
   },
   "dependencies": {
     "@shopify/app-bridge": "^3.7.10",
@@ -14,6 +15,7 @@
     "@shopify/polaris": "^12.0.0",
     "@shopify/polaris-icons": "^9.3.1",
     "@tanstack/react-query": "^5.83.0",
+    "@tinymce/tinymce-react": "^6.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.1",
