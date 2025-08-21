@@ -13,14 +13,12 @@ export default function App() {
   return (
     <AppProvider i18n={enTranslations}>
       <BrowserRouter>
-        {/* Navigation Menu - chỉ thêm phần này */}
-        <div style={{ padding: '16px', borderBottom: '1px solid #e1e3e5', background: '#fff' }}>
-          <ui-nav-menu>
-            <a href="/" rel="home">Dashboard</a>
-            <a href="/generate">Blog Posts</a>
-            <a href="/pricing">Pricing</a>
-          </ui-nav-menu>
-        </div>
+        {/* Navigation Menu */}
+        <ui-nav-menu>
+          <a href="/" rel="home">Dashboard</a>
+          <a href="/generate">Blog Posts</a>
+          <a href="/pricing">Pricing</a>
+        </ui-nav-menu>
 
         {/* Main Content - giữ nguyên layout cũ */}
         <div className="main-content">

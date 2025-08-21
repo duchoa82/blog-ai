@@ -6,7 +6,9 @@ import {
   Select, 
   TextField, 
   TextContainer,
-  Badge
+  Badge,
+  Button,
+  Tag
 } from '@shopify/polaris';
 import { 
   TextBoldIcon, 
@@ -53,6 +55,9 @@ export default function BlogGenerationPage() {
     readerPerspective: 'second-person-you'
   });
 
+  const [keywords, setKeywords] = useState('');
+  const [keywordsTags, setKeywordsTags] = useState<string[]>([]);
+  
   const [contentDetails, setContentDetails] = useState({
     keywords: '',
     postTitle: '',
@@ -98,6 +103,41 @@ export default function BlogGenerationPage() {
   const [showBlogEditor, setShowBlogEditor] = useState(false);
   const [showTitleDropdown, setShowTitleDropdown] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // Keywords tag management functions
+  const handleKeywordsChange = (value: string) => {
+    setKeywords(value);
+  };
+
+  const handleKeywordsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addKeyword();
+    }
+  };
+
+  const addKeyword = () => {
+    const trimmedKeyword = keywords.trim();
+    if (trimmedKeyword && !keywordsTags.includes(trimmedKeyword)) {
+      setKeywordsTags(prev => [...prev, trimmedKeyword]);
+      setKeywords('');
+      // Update contentDetails for form submission
+      setContentDetails(prev => ({
+        ...prev,
+        keywords: [...keywordsTags, trimmedKeyword].join(', ')
+      }));
+    }
+  };
+
+  const removeKeyword = (tagToRemove: string) => {
+    const newTags = keywordsTags.filter(tag => tag !== tagToRemove);
+    setKeywordsTags(newTags);
+    // Update contentDetails for form submission
+    setContentDetails(prev => ({
+      ...prev,
+      keywords: newTags.join(', ')
+    }));
+  };
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -414,13 +454,46 @@ export default function BlogGenerationPage() {
             {/* Keywords Section */}
             <div style={{ marginTop: '32px' }}>
               <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '500' }}>Content Details</h3>
-              <TextField
-                label="Keywords"
-                value={contentDetails.keywords}
-                onChange={(value) => handleContentDetailsChange('keywords', value)}
-                placeholder="Select keywords"
-                autoComplete="off"
-              />
+              
+              {/* Keywords Input with Tags */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ 
+                  fontSize: '14px', 
+                  fontWeight: '500', 
+                  marginBottom: '8px',
+                  color: '#202223'
+                }}>
+                  Keywords
+                </div>
+                <div onKeyDown={handleKeywordsKeyDown}>
+                  <TextField
+                    label=""
+                    value={keywords}
+                    onChange={handleKeywordsChange}
+                    placeholder="Type keywords and press Enter or comma to add tags"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+
+              {/* Keywords Tags Display */}
+              {keywordsTags.length > 0 && (
+                <div style={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: '8px',
+                  marginTop: '12px'
+                }}>
+                  {keywordsTags.map((tag, index) => (
+                    <Tag
+                      key={index}
+                      onRemove={() => removeKeyword(tag)}
+                    >
+                      {tag}
+                    </Tag>
+                  ))}
+                </div>
+              )}
             </div>
 
 
@@ -466,12 +539,17 @@ export default function BlogGenerationPage() {
             {/* Action Buttons */}
             <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #e1e3e5' }}>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button 
-                  className="polaris-button polaris-button--primary"
-                  onClick={() => setShowBlogEditor(true)}
+                                <Button
+                  variant="primary"
+                  onClick={() => {
+                    console.log('Generate button clicked!');
+                    console.log('Current showBlogEditor state:', showBlogEditor);
+                    setShowBlogEditor(true);
+                    console.log('After setShowBlogEditor(true)');
+                  }}
                 >
                   ⭐ Generate
-                </button>
+                </Button>
               </div>
             </div>
           </div>

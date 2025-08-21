@@ -143,7 +143,16 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
           <div className="header-right">
             <Button 
               variant="primary"
-              onClick={() => navigate('/generate')}
+              onClick={() => {
+                console.log('Navigating to /generate');
+                // Try both methods to ensure navigation works
+                try {
+                  navigate('/generate');
+                } catch (error) {
+                  console.log('React Router failed, using window.location');
+                  window.location.href = '/generate';
+                }
+              }}
             >
               Generate Blog Post
             </Button>
@@ -289,22 +298,7 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
                 </div>
                              </div>
                 
-                {/* Action Button for Brand Voice Setup */}
-                <div style={{ 
-                  marginTop: '24px', 
-                  paddingTop: '16px', 
-                  borderTop: '1px solid #e1e3e5',
-                  display: 'flex',
-                  justifyContent: 'center'
-                }}>
-                  <Button 
-                    variant="primary" 
-                    onClick={() => navigate('/generate')}
-                    size="large"
-                  >
-                    Generate Blog Post
-                  </Button>
-                </div>
+
                 </div>
               )}
          </div>
@@ -321,13 +315,7 @@ export default function DashboardPage({ shopInfo }: DashboardPageProps) {
               <div className="card-icon">✍️</div>
               <h3>Generate Blog Post</h3>
               <p>Create AI-powered blog content from your products.</p>
-              <Button 
-                variant="primary" 
-                onClick={() => navigate('/generate')}
-                size="slim"
-              >
-                Generate Blog Post
-              </Button>
+              <a href="/generate" className="get-started-link">Get Started</a>
             </div>
             
             <div className="action-card">
