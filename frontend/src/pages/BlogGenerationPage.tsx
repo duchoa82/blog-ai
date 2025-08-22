@@ -21,12 +21,12 @@ import {
 } from '@shopify/polaris-icons';
 import createApp from '@shopify/app-bridge';
 import { TitleBar } from '@shopify/app-bridge/actions';
-// import PageHeader from '../components/layout/PageHeader';
 import './BlogGenerationPage.css';
 import shopifyBlogService, { BlogData } from '../services/shopifyBlogService';
 import shopifyArticleService from '../services/shopifyArticleService';
 import shopConfigService from '../services/shopConfigService';
 import shopifySessionService from '../services/shopifySessionService';
+import RichTextEditor from '../components/RichTextEditor';
 
 export default function BlogGenerationPage() {
   const navigate = useNavigate();
@@ -72,2107 +72,539 @@ export default function BlogGenerationPage() {
 
 <p>The humble t-shirt has undergone a remarkable transformation, evolving from simple undergarments to sophisticated fashion statements. Summer 2025 sees this evolution reaching new heights, with designers reimagining the classic silhouette through innovative cuts, sustainable materials, and bold artistic expressions.</p>
 
-<p>This season's t-shirt trends reflect a broader cultural shift toward conscious consumption and artistic self-expression, making them more than just clothing items—they're canvases for personal storytelling and environmental responsibility.</p>
-
-<h2>Historical Context of T-Shirts in Summer Fashion</h2>
-<p>The t-shirt's journey through fashion history reveals its remarkable adaptability and cultural significance. From its origins as military undergarments to its adoption by various subcultures, the t-shirt has consistently functioned as a barometer for cultural shifts and aesthetic preferences.</p>
-
-<p>Each decade has brought new interpretations, from the rebellious graphics of the 1960s to the minimalist aesthetics of the 1990s, culminating in today's sophisticated blend of heritage and innovation.</p>
-
-<blockquote style="border-left: 4px solid #008060; padding-left: 20px; margin: 32px 0; font-style: italic; font-size: 18px; color: #6d7175;">
-"The t-shirt has consistently functioned as a barometer for cultural shifts and aesthetic preferences, with its evolution reflecting broader societal transformations in attitudes toward leisure, self-expression, and the democratization of fashion."
-<div style="margin-top: 12px; font-size: 14px; color: #8c9196;">- Dr. Eliza Montgomery, Fashion Historian at the Institute of Contemporary Style</div>
-</blockquote>
-
-<p>Summer 2025's t-shirt trends represent a culmination of this rich historical lineage, combining the best elements of past decades with cutting-edge innovations in sustainability, technology, and design philosophy.</p>
-
-<h3>Key Trends for Summer 2025:</h3>
-<ul>
-<li><strong>Eco-friendly Materials:</strong> Organic cotton, bamboo, and recycled fabrics</li>
-<li><strong>Bold Graphics:</strong> Artistic prints and cultural motifs</li>
-<li><strong>Innovative Cuts:</strong> Asymmetric hems and modern silhouettes</li>
-<li><strong>Sustainable Production:</strong> Ethical manufacturing processes</li>
-</ul>
-
-<h3>Styling Tips:</h3>
-<ol>
-<li>Pair with high-waisted shorts for a retro vibe</li>
-<li>Layer under blazers for smart-casual looks</li>
-<li>Accessorize with statement jewelry</li>
-<li>Choose breathable fabrics for hot weather</li>
-</ol>`
+<p>This season's t-shirt trends reflect a broader cultural shift toward conscious consumption and artistic self-expression, making them more than just clothing items—they're canvases for personal storytelling and environmental responsibility.</p>`
   });
 
-  const [showProductModal, setShowProductModal] = useState(false);
   const [showBlogEditor, setShowBlogEditor] = useState(false);
-  const [showTitleDropdown, setShowTitleDropdown] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showImageLibraryModal, setShowImageLibraryModal] = useState(false);
-  
-  // Radio button selection for titles
-  const [selectedTitleIndex, setSelectedTitleIndex] = useState(0);
-  
-  // Track changes for save functionality
+  const [showGeneratedTitles, setShowGeneratedTitles] = useState(false);
+  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
+  const [selectedTitle, setSelectedTitle] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [shopConfig, setShopConfig] = useState<any>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [originalContentDetails, setOriginalContentDetails] = useState({
-    keywords: '',
-    postTitle: '',
-    selectedProduct: '',
-    blogUrl: '',
-    blogContent: ''
-  });
-
-  // Keywords tag management functions
-  const handleKeywordsChange = (value: string) => {
-    setKeywords(value);
-  };
-
-  const handleKeywordsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      addKeyword();
-    }
-  };
-
-  const addKeyword = () => {
-    const trimmedKeyword = keywords.trim();
-    if (trimmedKeyword && !keywordsTags.includes(trimmedKeyword)) {
-      setKeywordsTags(prev => [...prev, trimmedKeyword]);
-      setKeywords('');
-      // Update contentDetails for form submission
-      setContentDetails(prev => ({
-        ...prev,
-        keywords: [...keywordsTags, trimmedKeyword].join(', ')
-      }));
-    }
-  };
-
-  const removeKeyword = (tagToRemove: string) => {
-    const newTags = keywordsTags.filter(tag => tag !== tagToRemove);
-    setKeywordsTags(newTags);
-    // Update contentDetails for form submission
-    setContentDetails(prev => ({
-      ...prev,
-      keywords: newTags.join(', ')
-    }));
-    setHasUnsavedChanges(true);
-  };
-
-  // Handle content changes and track unsaved changes
-  const handleContentDetailsChange = (field: string, value: string) => {
-    setContentDetails(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    setHasUnsavedChanges(true);
-  };
-
-  // Save changes
-  const handleSaveChanges = () => {
-    setOriginalContentDetails({ ...contentDetails });
-    setHasUnsavedChanges(false);
-    console.log('Changes saved successfully');
-  };
-
-  // Cancel changes
-  const handleCancelChanges = () => {
-    setContentDetails({ ...originalContentDetails });
-    setHasUnsavedChanges(false);
-    console.log('Changes cancelled');
-  };
-
-  // Shop configuration state
-  const [shopConfig, setShopConfig] = useState({
-    isConfigured: false,
-    isConnecting: false,
-    connectionError: '',
-    shopName: '',
-    currentShop: '',
-  });
-
-  // Initialize original content when modal opens
-  useEffect(() => {
-    if (showBlogEditor) {
-      setOriginalContentDetails({ ...contentDetails });
-      setHasUnsavedChanges(false);
-    }
-  }, [showBlogEditor]);
 
   // Initialize shop configuration
   useEffect(() => {
-    const initializeShopConfig = async () => {
-      try {
-        // Lấy shop hiện tại từ URL hoặc session
-        const currentShop = shopifySessionService.getCurrentShop();
-        
-        if (currentShop) {
-          // Kiểm tra session có hợp lệ không
-          const session = shopifySessionService.getSession(currentShop);
-          
-          if (session) {
-            // Initialize Shopify API client với session
-            shopifyBlogService.initialize(
-              currentShop,
-              session.accessToken,
-              '2025-01'
-            );
-            
-            setShopConfig(prev => ({
-              ...prev,
-              isConfigured: true,
-              shopName: session.shopName || currentShop.replace('.myshopify.com', ''),
-              currentShop,
-            }));
-            
-            // Test connection
-            setShopConfig(prev => ({ ...prev, isConnecting: true }));
-            try {
-              // Test với shop info
-              const shopInfo = await shopifyBlogService.getServiceInfo();
-              setShopConfig(prev => ({
-                ...prev,
-                isConnecting: false,
-                connectionError: '',
-              }));
-            } catch (error) {
-              setShopConfig(prev => ({
-                ...prev,
-                isConnecting: false,
-                connectionError: 'Failed to connect to store',
-              }));
-            }
-          } else {
-            // Không có session hợp lệ
-            setShopConfig(prev => ({
-              ...prev,
-              isConfigured: false,
-              currentShop,
-              connectionError: 'Please install the app first',
-            }));
-          }
-        } else {
-          // Fallback: dùng config cũ nếu có
-          const config = shopConfigService.getConfig();
-          if (config && shopConfigService.isConfigValid()) {
-            shopifyBlogService.initialize(
-              config.storeDomain,
-              config.accessToken,
-              config.apiVersion
-            );
-            setShopConfig(prev => ({
-              ...prev,
-              isConfigured: false,
-              connectionError: 'No shop configured. Please install the app.',
-            }));
-          } else {
-            setShopConfig(prev => ({
-              ...prev,
-              isConfigured: false,
-              connectionError: 'No shop configured. Please install the app.',
-            }));
-          }
-        }
-      } catch (error) {
-        console.error('Error initializing shop configuration:', error);
-        setShopConfig(prev => ({
-          ...prev,
-          isConfigured: false,
-          connectionError: error instanceof Error ? error.message : 'Unknown error',
-        }));
-      }
-    };
-
     initializeShopConfig();
   }, []);
 
-  // Publish blog post to Shopify store
-  const handlePublishBlog = async () => {
+  const initializeShopConfig = async () => {
     try {
-      console.log('Publishing blog post...');
+      const config = shopConfigService.getConfig();
+      setShopConfig(config);
       
-      // Check if shop is configured
-      if (!shopConfig.isConfigured) {
-        alert('Shop not configured. Please configure your Shopify store first.');
+      if (config && shopConfigService.isConfigValid()) {
+        shopifyBlogService.initialize(config.storeDomain, config.accessToken, config.apiVersion);
+      }
+    } catch (error) {
+      console.error('Error initializing shop configuration:', error);
+    }
+  };
+
+  const handlePublishBlog = async () => {
+          if (!shopConfig || !shopConfigService.isConfigValid()) {
+        alert('Please configure your Shopify store first');
         return;
       }
 
-      if (shopConfig.connectionError) {
-        alert(`Shop connection error: ${shopConfig.connectionError}. Please check your configuration.`);
-        return;
-      }
+    try {
+      console.log('Publishing blog post...');
       
-      // Get visibility setting from form
-      const visibilityInput = document.querySelector('input[name="visibility"]:checked') as HTMLInputElement;
-      const isPublished = visibilityInput?.value === 'visible';
-      
-      // Step 1: Create or get blog container
+      // Get or create blog container
       let blogId: number;
       try {
-        // Try to get existing blog first
         const blogs = await shopifyBlogService.getBlogs();
-        if (blogs.blogs.length > 0) {
-          blogId = blogs.blogs[0].id; // Use first blog
+        if (blogs.blogs && blogs.blogs.length > 0) {
+          blogId = blogs.blogs[0].id;
           console.log('Using existing blog:', blogId);
         } else {
-                     // Create new blog container if none exists
-           const blogData: BlogData = {
-             title: 'AI Generated Blog',
-             handle: 'ai-generated-blog',
-             tags: 'AI, Generated, Content',
-             template_suffix: 'ai-generated'
-           };
-                      const blogResponse = await shopifyBlogService.createBlog(blogData);
-            blogId = blogResponse.id;
+          // Create new blog container
+          const blogData: BlogData = {
+            title: 'AI Generated Blog',
+            handle: 'ai-generated-blog',
+            tags: 'AI, Generated, Blog',
+            commentable: 'moderate'
+          };
+          
+          const blogResponse = await shopifyBlogService.createBlog(blogData);
+          blogId = blogResponse.id;
           console.log('Created new blog container:', blogId);
         }
       } catch (error) {
         console.error('Error with blog container:', error);
-        throw new Error('Failed to create or access blog container');
+        throw error;
       }
 
-      // Step 2: Create article in the blog
+      // Initialize article service
+      const shopDomain = shopifySessionService.getCurrentShop() || shopConfig.storeDomain;
+      const accessToken = shopifySessionService.getAccessToken() || shopConfig.accessToken;
+      
+      if (!shopDomain || !accessToken) {
+        throw new Error('Shop domain or access token not available');
+      }
+
+      shopifyArticleService.initialize(shopDomain, accessToken, shopConfig.apiVersion);
+
+      // Create article data
       const articleData = {
         title: contentDetails.postTitle,
         body_html: contentDetails.blogContent,
-        author: 'AI Content Generator',
-        tags: keywordsTags.join(', '),
-        published: isPublished,
-        published_at: isPublished ? new Date().toISOString() : undefined,
-        handle: contentDetails.blogUrl || generateHandle(contentDetails.postTitle),
-        template_suffix: 'ai-generated',
-        metafields: [
-          {
-            key: 'seo_title',
-            value: contentDetails.postTitle,
-            type: 'single_line_text_field',
-            namespace: 'seo'
-          },
-          {
-            key: 'seo_description',
-            value: contentDetails.blogContent.substring(0, 160),
-            type: 'single_line_text_field',
-            namespace: 'seo'
-          },
-          {
-            key: 'keywords',
-            value: contentDetails.keywords,
-            type: 'single_line_text_field',
-            namespace: 'content'
-          }
-        ]
+        author: 'AI Blog Generator',
+        tags: contentDetails.keywords,
+        published: true,
+        template_suffix: 'ai-generated'
       };
 
       console.log('Article data to publish:', articleData);
 
-      // Show loading state
-      setShopConfig(prev => ({ ...prev, isConnecting: true }));
-
-      // Initialize article service with current shop credentials
-      let shopDomain = '';
-      let accessToken = '';
-      
-      // Try session service first
-      const currentShop = shopifySessionService.getCurrentShop();
-      if (currentShop) {
-        const session = shopifySessionService.getSession(currentShop);
-        if (session) {
-          shopDomain = currentShop;
-          accessToken = session.accessToken;
-        }
-      }
-      
-      // Fallback to config service if no session
-      if (!shopDomain || !accessToken) {
-        const config = shopConfigService.getConfig();
-        if (config && shopConfigService.isConfigValid()) {
-          shopDomain = config.storeDomain;
-          accessToken = config.accessToken;
-        }
-      }
-      
-      if (!shopDomain || !accessToken) {
-        throw new Error('No shop credentials available. Please configure your Shopify store first.');
-      }
-      
-      console.log('Shop domain:', shopDomain);
-      console.log('Access token available:', !!accessToken);
-      
-      shopifyArticleService.initialize(shopDomain, accessToken, '2025-01');
-
-      // Create article using REST API
+      // Publish article
       const articleResponse = await shopifyArticleService.createArticle(blogId, articleData);
-      
       console.log('Article published successfully:', articleResponse);
 
-      // Hide loading state
-      setShopConfig(prev => ({ ...prev, isConnecting: false }));
-
-      // Show success message
-      const status = isPublished ? 'published' : 'saved as draft';
-      alert(`Blog post "${articleResponse.title}" ${status} successfully!`);
+      alert('Blog post published successfully!');
       setShowBlogEditor(false);
       
     } catch (error) {
       console.error('Error publishing blog:', error);
-      
-      // Hide loading state
-      setShopConfig(prev => ({ ...prev, isConnecting: false }));
-      
-      // Show error message
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`Failed to publish blog post: ${errorMessage}`);
+      alert(`Failed to publish blog: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  };
-
-  // Generate URL handle from title
-  const generateHandle = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim();
-  };
-  const [showLinkModal, setShowLinkModal] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [showLinkInput, setShowLinkInput] = useState(false);
-  const [linkUrl, setLinkUrl] = useState('');
-
-  const [generatedTitles, setGeneratedTitles] = useState<string[]>([]);
-  const [recommendedTitle, setRecommendedTitle] = useState<string>('');
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  // Helper functions for text formatting
-  const applyHeading = (tag: string) => {
-    console.log('applyHeading called - SIMPLE VERSION:', tag);
-    
-    const editor = document.querySelector('[contenteditable]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const newElement = document.createElement(tag);
-    newElement.textContent = `# ${tag.toUpperCase()} HEADING`;
-    editor.appendChild(newElement);
-    
-    console.log(`${tag} heading appended successfully`);
-    setShowTitleDropdown(false);
-  };
-
-  const applyTextColor = (color: string) => {
-    console.log('applyTextColor called - SIMPLE VERSION:', color);
-    
-    const editor = document.querySelector('[contenteditable]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const span = document.createElement('span');
-    span.style.color = color;
-    span.textContent = ` [COLORED TEXT] `;
-    editor.appendChild(span);
-    
-    console.log('Colored text appended successfully');
-    setShowColorPicker(false);
-  };
-
-  const createLink = (url: string) => {
-    console.log('createLink called - SIMPLE VERSION:', url);
-    
-    const editor = document.querySelector('[contenteditable]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.textContent = ' [LINK TEXT] ';
-    editor.appendChild(link);
-    
-    console.log('Link appended successfully');
-    setShowLinkInput(false);
-    setLinkUrl('');
-  };
-
-
-
-  // Enhanced formatting functions with selection support
-  const applyBold = () => {
-    console.log('applyBold called - ENHANCED VERSION');
-    
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) {
-      console.log('Editor not found');
-      return;
-    }
-    
-    editor.focus();
-    
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        // Text is selected - wrap it with bold
-        const strong = document.createElement('strong');
-        range.surroundContents(strong);
-        console.log('Selected text wrapped with bold');
-      } else {
-        // No selection - insert new bold text
-        const strong = document.createElement('strong');
-        strong.textContent = ' **BOLD TEXT** ';
-        editor.appendChild(strong);
-        console.log('New bold text inserted');
-      }
-    } else {
-      // No selection - insert new bold text
-      const strong = document.createElement('strong');
-      strong.textContent = ' **BOLD TEXT** ';
-      editor.appendChild(strong);
-      console.log('New bold text inserted');
-    }
-  };
-
-  const applyItalic = () => {
-    console.log('applyItalic called - ENHANCED VERSION');
-    
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        // Text is selected - wrap it with italic
-        const em = document.createElement('em');
-        range.surroundContents(em);
-        console.log('Selected text wrapped with italic');
-      } else {
-        // No selection - insert new italic text
-        const em = document.createElement('em');
-        em.textContent = ' *ITALIC TEXT* ';
-        editor.appendChild(em);
-        console.log('New italic text inserted');
-      }
-    } else {
-      // No selection - insert new italic text
-      const em = document.createElement('em');
-      em.textContent = ' *ITALIC TEXT* ';
-      editor.appendChild(em);
-      console.log('New italic text inserted');
-    }
-  };
-
-  const applyUnderline = () => {
-    console.log('applyUnderline called - ENHANCED VERSION');
-    
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        // Text is selected - wrap it with underline
-        const u = document.createElement('u');
-        range.surroundContents(u);
-        console.log('Selected text wrapped with underline');
-      } else {
-        // No selection - insert new underlined text
-        const u = document.createElement('u');
-        u.textContent = ' _UNDERLINED TEXT_ ';
-        editor.appendChild(u);
-        console.log('New underlined text inserted');
-      }
-    } else {
-      // No selection - insert new underlined text
-      const u = document.createElement('u');
-      u.textContent = ' _UNDERLINED TEXT_ ';
-      editor.appendChild(u);
-      console.log('New underlined text inserted');
-    }
-  };
-
-  const applyList = () => {
-    console.log('applyList called - ENHANCED VERSION');
-    
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        // Text is selected - wrap it with list item
-        const ul = document.createElement('ul');
-        const li = document.createElement('li');
-        li.appendChild(range.extractContents());
-        ul.appendChild(li);
-        range.insertNode(ul);
-        console.log('Selected text wrapped with list item');
-      } else {
-        // No selection - insert new list
-        const ul = document.createElement('ul');
-        const li = document.createElement('li');
-        li.textContent = '• LIST ITEM';
-        ul.appendChild(li);
-        editor.appendChild(ul);
-        console.log('New list inserted');
-      }
-    } else {
-      // No selection - insert new list
-      const ul = document.createElement('ul');
-      const li = document.createElement('li');
-      li.textContent = '• LIST ITEM';
-      ul.appendChild(li);
-      editor.appendChild(ul);
-      console.log('New list inserted');
-    }
-  };
-
-  // Enhanced formatting functions with selection support
-  const applyFormatting = (tag: string, className?: string) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        // Text is selected - wrap it
-        const element = document.createElement(tag);
-        if (className) element.className = className;
-        range.surroundContents(element);
-      } else {
-        // No selection - insert new element
-        const element = document.createElement(tag);
-        element.textContent = ` ${tag.toUpperCase()} TEXT `;
-        editor.appendChild(element);
-      }
-    } else {
-      // No selection - insert new element
-      const element = document.createElement(tag);
-      element.textContent = ` ${tag.toUpperCase()} TEXT `;
-      editor.appendChild(element);
-    }
-  };
-
-  // Custom color application
-  const applyColor = (color: string) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        const span = document.createElement('span');
-        span.style.color = color;
-        range.surroundContents(span);
-      }
-    }
-  };
-
-  // Custom background color
-  const applyBackgroundColor = (color: string) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        const span = document.createElement('span');
-        span.style.backgroundColor = color;
-        range.surroundContents(span);
-      }
-    }
-  };
-
-  // Enhanced link insertion
-  const insertLink = (url: string, text?: string) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      if (!range.collapsed) {
-        // Text is selected - wrap it with link
-        const link = document.createElement('a');
-        link.href = url;
-        link.target = '_blank';
-        link.style.color = '#008060';
-        link.style.textDecoration = 'underline';
-        range.surroundContents(link);
-      } else {
-        // No selection - insert new link
-        const link = document.createElement('a');
-        link.href = url;
-        link.target = '_blank';
-        link.textContent = text || url;
-        link.style.color = '#008060';
-        link.style.textDecoration = 'underline';
-        editor.appendChild(link);
-      }
-    } else {
-      // No selection - insert new link
-      const link = document.createElement('a');
-      link.href = url;
-      link.target = '_blank';
-      link.textContent = text || url;
-      link.style.color = '#008060';
-      link.style.textDecoration = 'underline';
-      editor.appendChild(link);
-    }
-    
-    setShowLinkInput(false);
-    setLinkUrl('');
-  };
-
-  // Enhanced image insertion
-  const insertImage = (src: string, alt?: string, width?: string, height?: string) => {
-    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const img = document.createElement('img');
-    img.src = src;
-    img.alt = alt || 'Image';
-    if (width) img.style.width = width;
-    if (height) img.style.height = height;
-    img.style.maxWidth = '100%';
-    img.style.borderRadius = '8px';
-    img.style.margin = '16px 0';
-    
-    editor.appendChild(img);
-    setShowImageModal(false);
-  };
-
-  const handleContentSettingsChange = (field: string, value: string) => {
-    setContentSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-
-
-  const handleEditField = (field: string) => {
-    console.log('Editing field:', field);
-    // TODO: Implement field editing
   };
 
   const handleGenerateTitles = async () => {
-    if (!contentDetails.keywords) {
-      alert('Please enter keywords for your blog');
+    if (!keywords.trim()) {
+      alert('Please enter keywords first');
       return;
     }
 
     setIsGenerating(true);
-    
-    // Simulate AI generation
-    setTimeout(() => {
-      const mockTitles = [
-        "How to Choose the Perfect Product for Your Needs",
-        "Industry Trends: What's Hot in 2024",
-        "Product Spotlight: Why This Item Stands Out",
-        "Customer Success Stories: Real Results from Real People",
-        "My Take: Why This Trend Matters for Your Business",
-        "Behind the Scenes: How We Create Quality Products",
-        "Fun Facts: Surprising Things About Our Products"
-      ];
-      
-      setGeneratedTitles(mockTitles);
-      setRecommendedTitle(mockTitles[0]); // First title as recommended
+    try {
+      const response = await aiService.generateBlogTitles({
+        brandVoice: {
+          tone: contentSettings.styleVoice,
+          formalityLevel: contentSettings.depthLength,
+          brandPersonality: 'modern',
+          businessDescription: 'Fashion and Lifestyle',
+          targetCustomer: 'Fashion-conscious consumers'
+        },
+        keywords: keywords.split(',').map(k => k.trim()),
+        language: 'en'
+      });
+
+      if (response.success) {
+        setGeneratedTitles(response.titles);
+        setSelectedTitle(response.recommendedTitle);
+        setShowGeneratedTitles(true);
+      } else {
+        alert('Failed to generate titles');
+      }
+    } catch (error) {
+      console.error('Error generating titles:', error);
+      alert('Failed to generate titles');
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
+  };
+
+  const handleTitleSelect = (title: string) => {
+    setSelectedTitle(title);
+    setContentDetails(prev => ({ ...prev, postTitle: title }));
+  };
+
+  const handleContentSettingsChange = (field: string, value: string) => {
+    setContentSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleKeywordsChange = (value: string) => {
+    setKeywords(value);
+    const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag);
+    setKeywordsTags(tags);
+  };
+
+  const handleSaveChanges = () => {
+    setHasUnsavedChanges(false);
+    // TODO: Implement save logic
+  };
+
+  const handleCancelChanges = () => {
+    setHasUnsavedChanges(false);
+    // TODO: Implement cancel logic
   };
 
   return (
     <div className="blog-generation-page">
-      {/* Page Header */}
       <div className="page-header">
-        <div className="header-content">
-          <div className="header-left">
-            <h1 className="page-title">AI Blog Generation</h1>
+        <h1>AI Blog Generation</h1>
+        <p>Generate engaging blog content for your Shopify store</p>
+      </div>
+
+      {/* Shopify Store Connection Status */}
+      <Card>
+        <div style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>
+                Shopify Store Connection
+              </h3>
+                             <p style={{ margin: '0', color: '#6d7175', fontSize: '14px' }}>
+                 {shopConfig && shopConfigService.isConfigValid()
+                   ? `Connected to ${shopConfig.storeDomain}` 
+                   : 'Not configured - Please configure your Shopify store to publish blogs'
+                 }
+               </p>
+             </div>
+             {(!shopConfig || !shopConfigService.isConfigValid()) && (
+              <Button 
+                variant="primary" 
+                onClick={() => navigate('/auth')}
+              >
+                Install App
+              </Button>
+            )}
           </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Shop Configuration Status */}
-      <div className="shop-config-status" style={{ marginBottom: '24px' }}>
-        <Card>
-          <div style={{ padding: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '500' }}>
-                  Shopify Store Connection
-                </h3>
-                <div style={{ fontSize: '14px', color: '#6d7175' }}>
-                  {shopConfig.isConfigured ? (
-                    <>
-                      Connected to: <strong>{shopConfig.shopName}</strong>
-                      {shopConfig.connectionError && (
-                        <span style={{ color: '#d82c0d', marginLeft: '8px' }}>
-                          ⚠️ {shopConfig.connectionError}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      Not configured - Click "Install App" to connect your Shopify store
-                      <br />
-                      <span style={{ fontSize: '12px', color: '#8c9196' }}>
-                        This will allow you to publish blogs directly to your store
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {shopConfig.isConnecting && (
-                  <div style={{ fontSize: '14px', color: '#6d7175' }}>Connecting...</div>
-                )}
-                {!shopConfig.isConfigured && (
-                  <Button 
-                    variant="primary" 
-                    size="slim"
-                    onClick={() => navigate('/auth')}
-                  >
-                    Install App
-                  </Button>
-                )}
-                <div style={{
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '50%',
-                  backgroundColor: shopConfig.isConfigured && !shopConfig.connectionError 
-                    ? '#50b83c' 
-                    : shopConfig.isConfigured 
-                    ? '#f49342' 
-                    : '#d82c0d'
-                }} />
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Main Content */}
-      <div className="main-content">
-        {/* All Fields Container */}
-        <Card>
-          <div style={{ padding: '24px' }}>
-            
-            {/* Content Generation Settings */}
-            <div style={{ marginTop: '24px' }}>
-              <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '500' }}>Content Settings</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-                <div>
-                  <div style={{ 
-                    fontSize: '14px', 
-                    fontWeight: '500', 
-                    color: '#202223', 
-                    marginBottom: '4px',
-                    lineHeight: '1.4'
-                  }}>
-                    Style & Voice
-                  </div>
-                  <Select
-                    label=""
-                    labelInline
-                    options={[
-                      { label: 'Conversational', value: 'conversational' },
-                      { label: 'Storytelling', value: 'storytelling' },
-                      { label: 'Educational / Analytical', value: 'educational-analytical' },
-                      { label: 'Persuasive / Motivational', value: 'persuasive-motivational' },
-                      { label: 'Entertaining / Opinionated', value: 'entertaining-opinionated' }
-                    ]}
-                    value={contentSettings.styleVoice}
-                    onChange={(value) => handleContentSettingsChange('styleVoice', value)}
-                  />
-                </div>
-                
-                <div>
-                  <div style={{ 
-                    fontSize: '14px', 
-                    fontWeight: '500', 
-                    color: '#202223', 
-                    marginBottom: '4px',
-                    lineHeight: '1.4'
-                  }}>
-                    Depth & Length
-                  </div>
-                  <Select
-                    label=""
-                    labelInline
-                    options={[
-                      { label: 'Quick Read (500–800 words)', value: 'quick-read' },
-                      { label: 'Standard (1,000–1,500 words)', value: 'standard' },
-                      { label: 'In-depth (2,000+ words)', value: 'in-depth' }
-                    ]}
-                    value={contentSettings.depthLength}
-                    onChange={(value) => handleContentSettingsChange('depthLength', value)}
-                  />
-                </div>
-                
-                <div>
-                  <div style={{ 
-                    fontSize: '14px', 
-                    fontWeight: '500', 
-                    color: '#202223', 
-                    marginBottom: '4px',
-                    lineHeight: '1.4'
-                  }}>
-                    Goal / CTA
-                  </div>
-                  <Select
-                    label=""
-                    labelInline
-                    options={[
-                      { label: 'Engagement (comments & shares)', value: 'engagement' },
-                      { label: 'Awareness (informative / thought leadership)', value: 'awareness' },
-                      { label: 'Conversion (product / service / lead gen)', value: 'conversion' },
-                      { label: 'Community (loyalty & long-term trust)', value: 'community' }
-                    ]}
-                    value={contentSettings.goalCta}
-                    onChange={(value) => handleContentSettingsChange('goalCta', value)}
-                  />
-                </div>
-                
-                <div>
-                  <div style={{ 
-                    fontSize: '14px', 
-                    fontWeight: '500', 
-                    color: '#202223', 
-                    marginBottom: '4px',
-                    lineHeight: '1.4'
-                  }}>
-                    Reader Perspective
-                  </div>
-                  <Select
-                    label=""
-                    labelInline
-                    options={[
-                      { label: 'First-person (I)', value: 'first-person-i' },
-                      { label: 'First-person (We)', value: 'first-person-we' },
-                      { label: 'Second-person (You)', value: 'second-person-you' },
-                      { label: 'Third-person (They/It)', value: 'third-person-they-it' }
-                    ]}
-                    value={contentSettings.readerPerspective}
-                    onChange={(value) => handleContentSettingsChange('readerPerspective', value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Keywords Section */}
-            <div style={{ marginTop: '32px' }}>
-              <h3 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '500' }}>Content Details</h3>
-              
-              {/* Keywords Input with Tags */}
-              <div style={{ marginBottom: '16px' }}>
-                <div style={{ 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  marginBottom: '8px',
-                  color: '#202223'
-                }}>
-                  Keywords
-                </div>
-                <div onKeyDown={handleKeywordsKeyDown}>
-                  <TextField
-                    label=""
-                    value={keywords}
-                    onChange={handleKeywordsChange}
-                    placeholder="Type keywords and press Enter or comma to add tags"
-                    autoComplete="off"
-                  />
-                </div>
-              </div>
-
-              {/* Keywords Tags Display */}
-              {keywordsTags.length > 0 && (
-                <div style={{ 
-                  display: 'flex', 
-                  flexWrap: 'wrap', 
-                  gap: '8px',
-                  marginTop: '12px'
-                }}>
-                  {keywordsTags.map((tag, index) => (
-                    <Tag
-                      key={index}
-                      onRemove={() => removeKeyword(tag)}
-                    >
-                      {tag}
-                    </Tag>
-                  ))}
-                </div>
-              )}
-            </div>
-
-
-
-            {/* Blog Title Section */}
-            <div style={{ marginTop: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <div style={{ 
-                  fontSize: '14px', 
-                  fontWeight: '500', 
-                  color: '#202223'
-                }}>
-                  Blog title
-                </div>
-                <button 
-                  className="polaris-button polaris-button--plain"
-                  onClick={handleGenerateTitles}
-                >
-                  Generate title
-                </button>
-              </div>
-              <TextField
-                label=""
-                value={contentDetails.postTitle}
-                onChange={(value) => handleContentDetailsChange('postTitle', value)}
-                placeholder="Enter your blog title"
-                autoComplete="off"
+      {/* Content Settings */}
+      <Card>
+        <div style={{ padding: '20px' }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
+            Content Settings
+          </h3>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
+                Style & Voice
+              </label>
+              <Select
+                options={[
+                  { label: 'Conversational', value: 'conversational' },
+                  { label: 'Professional', value: 'professional' },
+                  { label: 'Casual', value: 'casual' },
+                  { label: 'Formal', value: 'formal' }
+                ]}
+                value={contentSettings.styleVoice}
+                onChange={(value) => handleContentSettingsChange('styleVoice', value)}
               />
             </div>
-
-            {/* Blog URL Input */}
-            <div style={{ marginTop: '24px' }}>
-              <TextField
-                label="Blog URL"
-                value={contentDetails.blogUrl}
-                onChange={(value) => handleContentDetailsChange('blogUrl', value)}
-                placeholder="Enter URL for your blog post"
-                autoComplete="off"
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
+                Depth & Length
+              </label>
+              <Select
+                options={[
+                  { label: 'Standard', value: 'standard' },
+                  { label: 'Detailed', value: 'detailed' },
+                  { label: 'Comprehensive', value: 'comprehensive' },
+                  { label: 'Brief', value: 'brief' }
+                ]}
+                value={contentSettings.depthLength}
+                onChange={(value) => handleContentSettingsChange('depthLength', value)}
               />
             </div>
+          </div>
 
-            {/* Action Buttons */}
-            <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #e1e3e5' }}>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <Button
-                  variant="primary"
-                  onClick={() => {
-                    console.log('Generate button clicked!');
-                    const modal = document.getElementById('blog-editor-modal');
-                    if (modal) {
-                      (modal as any).show();
-                    }
-                  }}
-                >
-                  ⭐ Generate
-                </Button>
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
+                Goal & CTA
+              </label>
+              <Select
+                options={[
+                  { label: 'Engagement', value: 'engagement' },
+                  { label: 'Sales', value: 'sales' },
+                  { label: 'Education', value: 'education' },
+                  { label: 'Brand Awareness', value: 'brand-awareness' }
+                ]}
+                value={contentSettings.goalCta}
+                onChange={(value) => handleContentSettingsChange('goalCta', value)}
+              />
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>
+                Reader Perspective
+              </label>
+              <Select
+                options={[
+                  { label: 'Second Person (You)', value: 'second-person-you' },
+                  { label: 'Third Person', value: 'third-person' },
+                  { label: 'First Person (We)', value: 'first-person-we' }
+                ]}
+                value={contentSettings.readerPerspective}
+                onChange={(value) => handleContentSettingsChange('readerPerspective', value)}
+              />
             </div>
           </div>
-        </Card>
+        </div>
+      </Card>
 
-        {/* Generated Titles Modal */}
-        {generatedTitles.length > 0 && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            zIndex: 1000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              width: '90%',
-              maxWidth: '600px',
-              maxHeight: '80vh',
-              overflow: 'auto'
-            }}>
-              <div style={{
-                padding: '20px',
-                borderBottom: '1px solid #e1e3e5',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Generated Blog Titles</h2>
-                <button 
-                  className="shopify-button-secondary"
-                  onClick={() => setGeneratedTitles([])}
-                  style={{ padding: '8px 16px' }}
-                >
-                  Close
-                </button>
-              </div>
-            
-            <div style={{ padding: '24px' }}>
-              <p style={{ margin: '0 0 20px 0', color: '#6d7175', fontSize: '14px' }}>AI-generated titles based on your brand voice and content</p>
-              
-              {/* Titles List */}
-              <div style={{ marginBottom: '20px' }}>
-                {generatedTitles.map((title, index) => (
-                  <div key={index} style={{
-                    padding: '16px',
-                    border: '1px solid #e1e3e5',
-                    borderRadius: '6px',
-                    marginBottom: '12px',
-                    backgroundColor: index === 0 ? '#f6f6f7' : 'white',
-                    position: 'relative'
-                  }}>
-                    {/* Recommended Badge */}
-                    {index === 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '-8px',
-                        right: '16px',
-                        backgroundColor: '#008060',
-                        color: 'white',
-                        padding: '4px 12px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: '500'
-                      }}>
-                        Recommended
-                      </div>
-                    )}
-                    
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                      <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        backgroundColor: index === 0 ? '#008060' : '#6d7175',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        flexShrink: 0
-                      }}>
-                        {index + 1}
-                      </div>
-                      
-                      <div style={{ flex: 1 }}>
-                        <div style={{
-                          fontSize: '16px',
-                          fontWeight: '500',
-                          marginBottom: '8px',
-                          color: '#202223'
-                        }}>
-                          {title}
-                        </div>
-                        <div style={{
-                          fontSize: '13px',
-                          color: '#6d7175',
-                          padding: '4px 8px',
-                          backgroundColor: '#f6f6f7',
-                          borderRadius: '4px',
-                          display: 'inline-block'
-                        }}>
-                          {index === 0 && 'Educational / How-to'}
-                          {index === 1 && 'Industry Insights / Trends'}
-                          {index === 2 && 'Product-focused'}
-                          {index === 3 && 'Customer Stories / Testimonials'}
-                          {index === 4 && 'Opinion / Thought Leadership'}
-                          {index === 5 && 'Behind-the-scenes / Company Culture'}
-                          {index === 6 && 'Fun / Engaging / Light-hearted'}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Action Buttons */}
-                    <div style={{
-                      display: 'flex',
-                      gap: '8px',
-                      marginTop: '16px',
-                      justifyContent: 'flex-end'
-                    }}>
-                      <Button 
-                        variant="secondary" 
-                        size="slim"
-                        onClick={() => {
-                          handleContentDetailsChange('postTitle', title);
-                          setGeneratedTitles([]);
-                        }}
-                      >
-                        Use This Title
-                      </Button>
-                    </div>
-                  </div>
+      {/* Keywords Input */}
+      <Card>
+        <div style={{ padding: '20px' }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
+            Keywords & Topics
+          </h3>
+          
+          <TextField
+            label="Keywords (comma-separated)"
+            value={keywords}
+            onChange={handleKeywordsChange}
+            placeholder="e.g., summer fashion, t-shirts, 2025 trends"
+            multiline={3}
+            helpText="Enter relevant keywords and topics for your blog post"
+          />
+          
+          {keywordsTags.length > 0 && (
+            <div style={{ marginTop: '12px' }}>
+              <div style={{ fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Keywords:</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {keywordsTags.map((tag, index) => (
+                  <Tag key={index}>{tag}</Tag>
                 ))}
               </div>
-              
-              {/* Modal Footer */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '12px',
-                paddingTop: '16px',
-                borderTop: '1px solid #e1e3e5'
-              }}>
-                <button 
-                  className="polaris-button polaris-button--secondary"
-                  onClick={() => setGeneratedTitles([])}
-                >
-                  Close
-                </button>
-                <button 
-                  className="polaris-button polaris-button--primary"
-                  onClick={() => {
-                    handleContentDetailsChange('postTitle', recommendedTitle);
-                    setGeneratedTitles([]);
-                  }}
-                >
-                  Use Recommended Title
-                </button>
-              </div>
             </div>
-          </div>
-        </div>
-        )}
-
-        {/* Loading State */}
-        {isGenerating && (
-          <div className="loading-section">
-            <div className="loading-content">
-              <h3>Generating Your Blog Titles...</h3>
-              <p>AI is analyzing your brand voice and creating personalized titles</p>
-              <div className="spinner"></div>
-              <p className="loading-note">This may take a few moments...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Blog Editor Modal - Using Shopify ui-modal with max variant */}
-        <ui-modal id="blog-editor-modal" variant="max" {...({} as any)}>
-          {/* Title Bar */}
-          <ui-title-bar title="Blog Editor">
-            <button 
-              className="shopify-button-primary"
-              onClick={handlePublishBlog}
-            >
-              Publish Blog
-            </button>
-            <button 
-              className="shopify-button-secondary"
-              onClick={() => setShowBlogEditor(false)}
-            >
-              Cancel
-            </button>
-          </ui-title-bar>
-          
-          <div className="blog-editor-content">
-            {/* Main Content */}
-            <div className="blog-editor-main">
-              {/* Left Sidebar - Post Settings */}
-              <div className="blog-editor-sidebar">
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: '#202223' }}>Post</div>
-                  
-                  {/* Visibility */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Visibility</div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <input type="radio" name="visibility" value="visible" />
-                        <span style={{ fontSize: '13px' }}>Visible</span>
-                      </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <input type="radio" name="visibility" value="hidden" defaultChecked />
-                        <span style={{ fontSize: '13px' }}>Hidden</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Featured Image */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Featured Image</div>
-                    <Button variant="secondary" size="slim">Generate with AI</Button>
-                    <div style={{
-                      width: '100%',
-                      height: '200px',
-                      border: '2px dashed #c9cccf',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#f6f6f7',
-                      marginBottom: '8px',
-                      gap: '8px'
-                    }}>
-                      <Button 
-                        variant="secondary" 
-                        size="slim"
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = 'image/*';
-                          input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0];
-                            if (file) {
-                              console.log('File selected:', file.name);
-                              // TODO: Handle file upload
-                            }
-                          };
-                          input.click();
-                        }}
-                      >
-                        ↑ Upload file
-                      </Button>
-                      <Button 
-                        variant="secondary" 
-                        size="slim"
-                        onClick={() => setShowImageLibraryModal(true)}
-                      >
-                        Select from library
-                      </Button>
-                    </div>
-                    <TextField
-                      label="or Insert image URL"
-                      placeholder="Enter image URL"
-                      autoComplete="off"
-                    />
-                  </div>
-
-                  {/* Excerpt */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Excerpt</div>
-                    <Button variant="secondary" size="slim">Generate with AI</Button>
-                    <textarea
-                      placeholder="Enter excerpt..."
-                      style={{
-                        width: '100%',
-                        height: '80px',
-                        padding: '8px',
-                        border: '1px solid #c9cccf',
-                        borderRadius: '4px',
-                        fontSize: '13px',
-                        resize: 'none'
-                      }}
-                    />
-                  </div>
-
-                  {/* Organization */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Organization</div>
-                    <Select
-                      label="Author"
-                      labelInline
-                      options={[{ label: 'Default', value: 'default' }]}
-                      value="default"
-                      onChange={() => {}}
-                    />
-                    <Select
-                      label="Blog *"
-                      labelInline
-                      options={[{ label: 'News', value: 'news' }]}
-                      value="news"
-                      onChange={() => {}}
-                    />
-                  </div>
-
-                  {/* Tags */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>Tags</div>
-                    <Button variant="secondary" size="slim">Generate with AI</Button>
-                    <TextField
-                      label=""
-                      placeholder="Enter tags..."
-                      value="fashion trends, summer 2025, stylish t-shirts, sumi"
-                      autoComplete="off"
-                    />
-                  </div>
-
-                  {/* SEO Title */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>SEO title</div>
-                    <Button variant="secondary" size="slim">Auto fill</Button>
-                    <TextField
-                      label=""
-                      placeholder="Enter SEO title..."
-                      value="Stay Cool in Style: Essential T-Shirt Trends for Surr"
-                      autoComplete="off"
-                    />
-                    <div style={{ fontSize: '12px', color: '#008060', marginTop: '4px' }}>60 characters</div>
-                  </div>
-
-                  {/* SEO Description */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>SEO description</div>
-                    <Button variant="secondary" size="slim">Generate with AI</Button>
-                    <textarea
-                      placeholder="Enter SEO description..."
-                      value="Discover the essential T-shirt trends for Summer 2025 and learn how to stay cool in style with our fresh fashion insights."
-                      style={{
-                        width: '100%',
-                        height: '80px',
-                        padding: '8px',
-                        border: '1px solid #c9cccf',
-                        borderRadius: '4px',
-                        fontSize: '13px',
-                        resize: 'none'
-                      }}
-                    />
-                    <div style={{ fontSize: '12px', color: '#008060', marginTop: '4px' }}>122 characters</div>
-                  </div>
-
-                  {/* URL and Handle */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '13px', fontWeight: '500', marginBottom: '8px' }}>URL and handle</div>
-                    <TextField
-                      label=""
-                      placeholder="Enter URL..."
-                      value="/news/stay-cool-in-style-essential-t-shirt-trends"
-                      autoComplete="off"
-                      size="slim"
-                    />
-                  </div>
-                  
-                  {/* Publish Section */}
-                  <div style={{ 
-                    marginTop: '32px', 
-                    paddingTop: '24px', 
-                    borderTop: '1px solid #e1e3e5' 
-                  }}>
-                    <div style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#202223' }}>
-                      Ready to Publish?
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <button 
-                        className="shopify-button-primary"
-                        onClick={handlePublishBlog}
-                        style={{ flex: 1 }}
-                      >
-                        🚀 Publish Blog
-                      </button>
-                      <button 
-                        className="shopify-button-secondary"
-                        onClick={() => setShowBlogEditor(false)}
-                      >
-                        Save Draft
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Section - Blog Post Preview */}
-              <div className="blog-editor-main-content">
-                {/* Rich Text Editor - Full Width & Floating */}
-                <div style={{ 
-                  width: '100%',
-                  backgroundColor: 'white',
-                  position: 'sticky',
-                  top: '0',
-                  zIndex: 10,
-                  marginBottom: '24px'
-                }}>
-                  {/* Toolbar */}
-                  <div style={{ 
-                    padding: '0 40px',
-                    backgroundColor: '#f6f6f7',
-                    borderBottom: '1px solid #e1e3e5',
-                    display: 'flex',
-                    gap: '8px',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    top: '0',
-                    zIndex: 10
-                  }}>
-                    {/* Text Style Dropdown - H2, H3, H4, H5, Paragraph */}
-                    <button 
-                      onClick={() => setShowTitleDropdown(!showTitleDropdown)}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        gap: '4px',
-                        padding: '8px 12px',
-                        border: '1px solid #c9cccf',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: '500'
-                      }}
-                    >
-                      <span>📝</span>
-                      <span>Style</span>
-                      <span style={{ fontSize: '10px' }}>⌄</span>
-                    </button>
-                    
-                    {/* Title Dropdown */}
-                    {showTitleDropdown && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: '0',
-                        backgroundColor: 'white',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        zIndex: 1000,
-                        minWidth: '150px',
-                        marginTop: '4px'
-                      }}>
-                        <div style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }} onClick={() => applyHeading('h1')}>Heading 1</div>
-                        <div style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }} onClick={() => applyHeading('h2')}>Heading 2</div>
-                        <div style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #eee' }} onClick={() => applyHeading('h5')}>Heading 5</div>
-                        <div style={{ padding: '8px 12px', cursor: 'pointer' }} onClick={() => applyHeading('p')}>Paragraph</div>
-                      </div>
-                    )}
-
-                    {/* Bold */}
-                    <button 
-                      onClick={applyBold}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #c9cccf',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: '600'
-                      }}
-                    >
-                      <span>B</span>
-                    </button>
-
-                    {/* Italic */}
-                    <button 
-                      onClick={applyItalic}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #c9cccf',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontStyle: 'italic'
-                      }}
-                    >
-                      <span>I</span>
-                    </button>
-
-                    {/* Underline */}
-                    <button 
-                      onClick={applyUnderline}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #c9cccf',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        textDecoration: 'underline'
-                      }}
-                    >
-                      <span>U</span>
-                    </button>
-
-                    {/* Bullet List */}
-                    <button 
-                      onClick={applyList}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #c9cccf',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      <span>•</span>
-                    </button>
-
-                    {/* Text Color */}
-                    <button 
-                      onClick={() => setShowColorPicker(!showColorPicker)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #c9cccf',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      <span>🎨</span>
-                    </button>
-
-                    {/* Custom Color Picker */}
-                    {showColorPicker && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: '0',
-                        backgroundColor: 'white',
-                        border: '1px solid #ccc',
-                        borderRadius: '4px',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        zIndex: 1000,
-                        padding: '12px',
-                        minWidth: '200px',
-                        marginTop: '4px'
-                      }}>
-                        <div style={{ marginBottom: '8px', fontWeight: '500', fontSize: '12px' }}>Text Colors</div>
-                        <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                          {['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000'].map(color => (
-                            <button
-                              key={color}
-                              onClick={() => applyColor(color)}
-                              style={{
-                                width: '24px',
-                                height: '24px',
-                                backgroundColor: color,
-                                border: '1px solid #ccc',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                              }}
-                              title={color}
-                            />
-                          ))}
-                        </div>
-                        <div style={{ marginBottom: '8px', fontWeight: '500', fontSize: '12px' }}>Background Colors</div>
-                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                          {['#FFFFFF', '#FFE6E6', '#E6FFE6', '#E6E6FF', '#FFFFE6', '#FFE6FF', '#E6FFFF', '#FFE6CC', '#E6CCFF', '#CCFFE6'].map(color => (
-                            <button
-                              key={color}
-                              onClick={() => applyBackgroundColor(color)}
-                              style={{
-                                width: '24px',
-                                height: '24px',
-                                backgroundColor: color,
-                                border: '1px solid #ccc',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                              }}
-                              title={color}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Link */}
-                    <button 
-                      onClick={() => {
-                        const selection = window.getSelection();
-                        if (selection && selection.rangeCount > 0) {
-                          const range = selection.getRangeAt(0);
-                          if (!range.collapsed) {
-                            // Text được select - hiện input
-                            setShowLinkInput(true);
-                            setLinkUrl('');
-                          }
-                        }
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #c9cccf',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      <span>🔗</span>
-                    </button>
-
-                    {/* Image */}
-                    <button 
-                      onClick={() => setShowImageModal(!showImageModal)}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #c9cccf',
-                        backgroundColor: 'white',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
-                    >
-                      <span>🖼️</span>
-                    </button>
-                  </div>
-                  
-                  {/* Content Area - Centered with Max Width and Left Aligned Text */}
-                  <div style={{ 
-                    padding: '40px',
-                    maxWidth: '980px',
-                    margin: '0 auto',
-                    textAlign: 'left'
-                  }}>
-                    {/* Title */}
-                    <h1 style={{
-                      fontSize: '32px',
-                      fontWeight: '700',
-                      marginBottom: '24px',
-                      lineHeight: '1.2',
-                      color: '#202223'
-                    }}>
-                      Stay Cool in Style: Must-Have T-Shirt Trends for Summer 2025
-                    </h1>
-
-                    {/* Media Section */}
-                    <div style={{
-                      width: '980px',
-                      height: '200px',
-                      border: '2px dashed #c9cccf',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: '#f6f6f7',
-                      marginBottom: '24px'
-                    }}>
-                      <div style={{ marginBottom: '8px' }}>
-                        <Button variant="secondary" size="slim">↑ Upload file</Button>
-                      </div>
-                      <div style={{ marginBottom: '8px' }}>
-                        <Button variant="secondary" size="slim">Select from library</Button>
-                      </div>
-                      <Button variant="secondary" size="slim">Generate with AI</Button>
-                    </div>
-
-                    {/* Blog Content Editor */}
-                    <div 
-                      contentEditable
-                      style={{ 
-                        fontSize: '16px', 
-                        lineHeight: '1.6', 
-                        color: '#202223',
-                        minHeight: '200px',
-                        border: '1px solid #e1e3e5',
-                        borderRadius: '8px',
-                        padding: '16px',
-                        outline: 'none',
-                        position: 'relative'
-                      }}
-                      onInput={(e) => {
-                        // Handle content changes
-                      }}
-                    >
-                      <p style={{ marginBottom: '20px' }}>
-                        The sweltering heat of summer 2025 is on the horizon, and fashion enthusiasts are already contemplating their seasonal wardrobe refreshes. As temperatures rise, the humble t-shirt emerges as the quintessential sartorial staple—versatile, comfortable, and increasingly fashion-forward. This season's t-shirt trends reflect a fascinating amalgamation of nostalgic elements, technological advancements, and sustainable practices that cater to the discerning modern consumer. Whether you're lounging poolside, attending outdoor social gatherings, or navigating urban landscapes, these trending styles will ensure you remain simultaneously cool and stylish throughout the estival months.
-                      </p>
-
-                      <h2 style={{
-                        fontSize: '24px',
-                        fontWeight: '600',
-                        marginBottom: '16px',
-                        marginTop: '32px'
-                      }}>
-                        The Evolution of Summer T-Shirts: From Basic to Trendsetting
-                      </h2>
-
-                      <p style={{ marginBottom: '20px' }}>
-                        The t-shirt's trajectory from utilitarian undergarment to fashion statement piece represents one of the most remarkable metamorphoses in sartorial history. Initially conceptualized as a practical solution for military personnel in the early 20th century, the t-shirt has transcended its humble origins to become a canvas for self-expression and an indicator of contemporary aesthetic sensibilities.
-                      </p>
-
-                      <p style={{ marginBottom: '20px' }}>
-                        For Summer 2025, designers have reimagined this wardrobe fundamental through innovative silhouettes, avant-garde textile technologies, and a renewed emphasis on sustainability. The resultant iterations represent a harmonious synthesis of comfort and high fashion, challenging the previously entrenched dichotomy between the two concepts.
-                      </p>
-
-                      <h3 style={{
-                        fontSize: '20px',
-                        fontWeight: '600',
-                        marginBottom: '12px',
-                        marginTop: '24px',
-                        marginLeft: '20px'
-                      }}>
-                        Historical Context of T-Shirts in Summer Fashion
-                      </h3>
-
-                      <p style={{ marginBottom: '20px', marginLeft: '20px' }}>
-                        The t-shirt's association with summer dates back to mid-20th century America, when celebrities like Marlon Brando and James Dean popularized the garment as outerwear, challenging societal norms and establishing it as a symbol of youthful rebellion. The subsequent decades witnessed the t-shirt's increasing ubiquity across demographic and socioeconomic boundaries, with each era introducing distinctive stylistic variations.
-                      </p>
-
-                      <p style={{ marginBottom: '20px', marginLeft: '20px' }}>
-                        The 1960s and 1970s saw the emergence of tie-dye and graphic prints as vehicles for countercultural messaging, while the 1980s embraced oversized silhouettes and bold logo placements. The minimalist aesthetic of the 1990s temporarily relegated the t-shirt to basic status, before the early 2000s reintroduced embellishments and slogan designs.
-                      </p>
-
-                      <blockquote style={{
-                        borderLeft: '4px solid #008060',
-                        paddingLeft: '20px',
-                        margin: '32px 0',
-                        fontStyle: 'italic',
-                        fontSize: '18px',
-                        color: '#6d7175',
-                        marginLeft: '20px'
-                      }}>
-                        "The t-shirt has consistently functioned as a barometer for cultural shifts and aesthetic preferences, with its evolution reflecting broader societal transformations in attitudes toward leisure, self-expression, and the democratization of fashion."
-                        <div style={{ marginTop: '12px', fontSize: '14px', color: '#8c9196' }}>
-                          — Dr. Eliza Montgomery, Fashion Historian at the Institute of Contemporary Style
-                        </div>
-                      </blockquote>
-
-                      <p style={{ marginBottom: '20px', marginLeft: '20px' }}>
-                        Summer 2025's t-shirt trends represent the culmination of this rich historical lineage, synthesizing elements from various decades while introducing cutting-edge innovations in sustainability, technology, and design philosophy.
-                      </p>
-                      
-                      {/* Link Input Overlay */}
-                      {showLinkInput && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          backgroundColor: 'white',
-                          border: '1px solid #ccc',
-                          borderRadius: '8px',
-                          padding: '16px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                          zIndex: 1000,
-                          minWidth: '300px'
-                        }}>
-                          <div style={{ marginBottom: '12px', fontWeight: '500' }}>Insert Link</div>
-                          <input
-                            type="text"
-                            placeholder="Enter URL..."
-                            value={linkUrl}
-                            onChange={(e) => setLinkUrl(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '8px 12px',
-                              border: '1px solid #ccc',
-                              borderRadius: '4px',
-                              marginBottom: '12px'
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                // Tạo link
-                                createLink(linkUrl);
-                              }
-                            }}
-                          />
-                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            <button 
-                              onClick={() => setShowLinkInput(false)}
-                              style={{
-                                padding: '6px 12px',
-                                border: '1px solid #ccc',
-                                backgroundColor: 'white',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Cancel
-                            </button>
-                            <button 
-                              onClick={() => createLink(linkUrl)}
-                              style={{
-                                padding: '6px 12px',
-                                border: 'none',
-                                backgroundColor: '#008060',
-                                color: 'white',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Insert
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Color Picker Overlay */}
-                      {showColorPicker && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          backgroundColor: 'white',
-                          border: '1px solid #ccc',
-                          borderRadius: '8px',
-                          padding: '16px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                          zIndex: 1000,
-                          minWidth: '250px'
-                        }}>
-                          <div style={{ marginBottom: '12px', fontWeight: '500' }}>Text Color</div>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '16px' }}>
-                            {['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FFC0CB', '#A52A2A'].map((color) => (
-                              <button
-                                key={color}
-                                onClick={() => applyTextColor(color)}
-                                style={{
-                                  width: '32px',
-                                  height: '32px',
-                                  backgroundColor: color,
-                                  border: '1px solid #ccc',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer'
-                                }}
-                                title={color}
-                              />
-                            ))}
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button 
-                              onClick={() => setShowColorPicker(false)}
-                              style={{
-                                padding: '6px 12px',
-                                border: '1px solid #ccc',
-                                backgroundColor: 'white',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Close
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Image Modal Overlay */}
-                      {showImageModal && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          backgroundColor: 'white',
-                          border: '1px solid #ccc',
-                          borderRadius: '8px',
-                          padding: '16px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                          zIndex: 1000,
-                          minWidth: '350px'
-                        }}>
-                          <div style={{ marginBottom: '16px', fontWeight: '500' }}>Insert Image</div>
-                          
-                          {/* Image URL Input */}
-                          <div style={{ marginBottom: '16px' }}>
-                            <div style={{ marginBottom: '8px', fontSize: '14px' }}>Image URL:</div>
-                            <input
-                              type="text"
-                              placeholder="https://example.com/image.jpg"
-                              style={{
-                                width: '100%',
-                                padding: '8px 12px',
-                                border: '1px solid #ccc',
-                                borderRadius: '4px'
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && (e.target as HTMLInputElement).value) {
-                                  insertImage((e.target as HTMLInputElement).value);
-                                }
-                              }}
-                            />
-                          </div>
-                          
-                          {/* Upload Buttons */}
-                          <div style={{ marginBottom: '16px' }}>
-                            <div style={{ marginBottom: '8px', fontSize: '14px' }}>Or upload:</div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button style={{
-                                padding: '8px 12px',
-                                border: '1px solid #ccc',
-                                backgroundColor: 'white',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '14px'
-                              }}>
-                                📁 Choose File
-                              </button>
-                              <button style={{
-                                padding: '8px 12px',
-                                border: '1px solid #ccc',
-                                backgroundColor: 'white',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '14px'
-                              }}>
-                                🖼️ From Library
-                              </button>
-                            </div>
-                          </div>
-                          
-                          {/* Action Buttons */}
-                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            <button 
-                              onClick={() => setShowImageModal(false)}
-                              style={{
-                                padding: '6px 12px',
-                                border: '1px solid #ccc',
-                                backgroundColor: 'white',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Cancel
-                            </button>
-                            <button 
-                              onClick={() => {
-                                const urlInput = document.querySelector('input[placeholder="https://example.com/image.jpg"]') as HTMLInputElement;
-                                if (urlInput && urlInput.value) {
-                                  insertImage(urlInput.value);
-                                }
-                              }}
-                              style={{
-                                padding: '6px 12px',
-                                border: 'none',
-                                backgroundColor: '#008060',
-                                color: 'white',
-                                borderRadius: '4px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              Insert
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-
-              </div>
-            </div>
-          </div>
-          
-          {/* Save Bar - Show when there are unsaved changes */}
-          {hasUnsavedChanges && (
-            <ui-save-bar id="blog-editor-save-bar">
-              <button onClick={handleSaveChanges}>Save changes</button>
-              <button onClick={handleCancelChanges}>Cancel</button>
-            </ui-save-bar>
           )}
-          
-          {/* Modal Title Bar - Removed duplicate, using main title bar instead */}
-        </ui-modal>
+        </div>
+      </Card>
 
-        {/* Image Library Modal */}
-        {showImageLibraryModal && (
+      {/* Generate Button */}
+      <div style={{ textAlign: 'center', margin: '24px 0' }}>
+        <Button 
+          variant="primary" 
+          size="large"
+          onClick={handleGenerateTitles}
+          disabled={!keywords.trim() || isGenerating}
+        >
+          {isGenerating ? 'Generating...' : 'Generate Blog Titles'}
+        </Button>
+      </div>
+
+      {/* Generated Titles Modal */}
+      {showGeneratedTitles && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
           <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 2000,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center'
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '600px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflowY: 'auto'
           }}>
             <div style={{
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              padding: '24px',
-              maxWidth: '800px',
-              width: '90%',
-              maxHeight: '80vh',
-              overflowY: 'auto'
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px'
             }}>
-              {/* Modal Header */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px',
-                paddingBottom: '16px',
-                borderBottom: '1px solid #e1e3e5'
-              }}>
-                <div>
-                  <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>Select Image from Library</h2>
-                  <p style={{ margin: '8px 0 0 0', color: '#6d7175', fontSize: '14px' }}>Choose an image from your store's media library</p>
-                </div>
-                <button 
-                  onClick={() => setShowImageLibraryModal(false)}
-                  style={{
-                    padding: '8px',
-                    border: 'none',
-                    backgroundColor: 'transparent',
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>
+                Generated Blog Titles
+              </h2>
+              <button
+                onClick={() => setShowGeneratedTitles(false)}
+                style={{
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <p style={{ margin: '0 0 16px 0', color: '#6d7175' }}>
+                Choose a title for your blog post:
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {generatedTitles.map((title, index) => (
+                  <label key={index} style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    padding: '12px',
+                    border: '1px solid #e1e3e5',
+                    borderRadius: '8px',
                     cursor: 'pointer',
-                    fontSize: '18px'
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-              
-              {/* Image Grid */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                gap: '16px',
-                marginBottom: '20px'
-              }}>
-                {/* Mock Images - Replace with actual store images */}
-                {[1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12].map((num) => (
-                  <div
-                    key={num}
-                    onClick={() => {
-                      console.log('Image selected:', num);
-                      setShowImageLibraryModal(false);
-                      // TODO: Set selected image
-                    }}
-                    style={{
-                      width: '150px',
-                      height: '150px',
-                      backgroundColor: '#f6f6f7',
-                      border: '2px solid #e1e3e5',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      fontSize: '24px',
-                      color: '#6d7175',
-                      transition: 'border-color 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#008060';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#e1e3e5';
-                    }}
-                  >
-                    🖼️ {num}
-                  </div>
+                    backgroundColor: selectedTitle === title ? '#f0f9ff' : 'white'
+                  }}>
+                    <input
+                      type="radio"
+                      name="title"
+                      value={title}
+                      checked={selectedTitle === title}
+                      onChange={() => handleTitleSelect(title)}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                        {title}
+                        {index === 0 && (
+                          <Badge tone="success" size="small" style={{ marginLeft: '8px' }}>
+                            Recommended
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </label>
                 ))}
+                
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '12px',
+                  border: '1px solid #e1e3e5',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  backgroundColor: selectedTitle === 'custom' ? '#f0f9ff' : 'white'
+                }}>
+                  <input
+                    type="radio"
+                    name="title"
+                    value="custom"
+                    checked={selectedTitle === 'custom'}
+                    onChange={() => setSelectedTitle('custom')}
+                  />
+                  <div>
+                    <div style={{ fontWeight: '500' }}>Write your own</div>
+                  </div>
+                </label>
               </div>
-              
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <Button variant="secondary" onClick={() => setShowImageLibraryModal(false)}>
+            </div>
+
+            {selectedTitle === 'custom' && (
+              <div style={{ marginBottom: '20px' }}>
+                <TextField
+                  label="Custom Title"
+                  value={contentDetails.postTitle}
+                  onChange={(value) => setContentDetails(prev => ({ ...prev, postTitle: value }))}
+                  placeholder="Enter your custom title"
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <Button variant="secondary" onClick={() => setShowGeneratedTitles(false)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="primary" 
+                onClick={() => {
+                  setShowGeneratedTitles(false);
+                  setShowBlogEditor(true);
+                }}
+                disabled={!selectedTitle || (selectedTitle === 'custom' && !contentDetails.postTitle.trim())}
+              >
+                Continue to Editor
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Blog Editor Modal */}
+      {showBlogEditor && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            width: '95%',
+            height: '90vh',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Title Bar */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '20px',
+              borderBottom: '1px solid #e1e3e5'
+            }}>
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>
+                Blog Editor
+              </h2>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <Button 
+                  variant="primary"
+                  onClick={handlePublishBlog}
+                >
+                  🚀 Publish Blog
+                </Button>
+                <Button 
+                  variant="secondary"
+                  onClick={() => setShowBlogEditor(false)}
+                >
                   Cancel
                 </Button>
-                <Button variant="primary" onClick={() => setShowImageLibraryModal(false)}>
-                  Select Image
-                </Button>
+              </div>
+            </div>
+            
+            {/* Editor Content */}
+            <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+              {/* Blog Title */}
+              <div style={{ marginBottom: '24px' }}>
+                <TextField
+                  label="Blog Title"
+                  value={contentDetails.postTitle}
+                  onChange={(value) => setContentDetails(prev => ({ ...prev, postTitle: value }))}
+                  placeholder="Enter your blog title"
+                />
+              </div>
+
+              {/* Blog URL */}
+              <div style={{ marginBottom: '24px' }}>
+                <TextField
+                  label="Blog URL (handle)"
+                  value={contentDetails.blogUrl}
+                  onChange={(value) => setContentDetails(prev => ({ ...prev, blogUrl: value }))}
+                  placeholder="blog-url-handle"
+                  helpText="This will be the URL slug for your blog post"
+                />
+              </div>
+
+              {/* Rich Text Editor */}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '12px', fontSize: '14px', fontWeight: '500' }}>
+                  Blog Content
+                </label>
+                <RichTextEditor
+                  value={contentDetails.blogContent}
+                  onChange={(content) => setContentDetails(prev => ({ ...prev, blogContent: content }))}
+                  placeholder="Start writing your blog content..."
+                />
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
