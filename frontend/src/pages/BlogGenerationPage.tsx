@@ -868,11 +868,42 @@ export default function BlogGenerationPage() {
 
         {/* Generated Titles Modal */}
         {generatedTitles.length > 0 && (
-          <ui-modal id="titles-modal">
-            <ui-title-bar title="Generated Blog Titles">
-              <button className="shopify-button-primary">Use Title</button>
-              <button className="shopify-button-secondary" onClick={() => setGeneratedTitles([])}>Close</button>
-            </ui-title-bar>
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              width: '90%',
+              maxWidth: '600px',
+              maxHeight: '80vh',
+              overflow: 'auto'
+            }}>
+              <div style={{
+                padding: '20px',
+                borderBottom: '1px solid #e1e3e5',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Generated Blog Titles</h2>
+                <button 
+                  className="shopify-button-secondary"
+                  onClick={() => setGeneratedTitles([])}
+                  style={{ padding: '8px 16px' }}
+                >
+                  Close
+                </button>
+              </div>
             
             <div style={{ padding: '24px' }}>
               <p style={{ margin: '0 0 20px 0', color: '#6d7175', fontSize: '14px' }}>AI-generated titles based on your brand voice and content</p>
@@ -997,7 +1028,8 @@ export default function BlogGenerationPage() {
                 </button>
               </div>
             </div>
-          </ui-modal>
+          </div>
+        </div>
         )}
 
         {/* Loading State */}
