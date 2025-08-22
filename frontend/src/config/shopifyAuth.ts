@@ -14,7 +14,7 @@ export const SHOPIFY_AUTH_CONFIG = {
   ].join(','),
   
   // App URL (sẽ thay đổi khi deploy)
-  APP_URL: import.meta.env.VITE_APP_URL || 'http://localhost:5173',
+  APP_URL: import.meta.env.VITE_APP_URL || 'https://blog-seo-ai-production.up.railway.app',
   
   // Redirect URLs
   AUTH_CALLBACK_URL: '/auth/callback',

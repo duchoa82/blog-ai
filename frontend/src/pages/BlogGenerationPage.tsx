@@ -496,73 +496,143 @@ export default function BlogGenerationPage() {
 
 
 
-  // Basic formatting functions
+  // Enhanced formatting functions with selection support
   const applyBold = () => {
-    console.log('applyBold called - SIMPLE VERSION');
+    console.log('applyBold called - ENHANCED VERSION');
     
-    // Find editor by contentEditable attribute
     const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (!editor) {
       console.log('Editor not found');
       return;
     }
     
-    // Focus editor
     editor.focus();
     
-    // Simply append new content to editor
-    const strong = document.createElement('strong');
-    strong.textContent = ' **BOLD TEXT** ';
-    editor.appendChild(strong);
-    
-    console.log('Bold text appended successfully');
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) {
+        // Text is selected - wrap it with bold
+        const strong = document.createElement('strong');
+        range.surroundContents(strong);
+        console.log('Selected text wrapped with bold');
+      } else {
+        // No selection - insert new bold text
+        const strong = document.createElement('strong');
+        strong.textContent = ' **BOLD TEXT** ';
+        editor.appendChild(strong);
+        console.log('New bold text inserted');
+      }
+    } else {
+      // No selection - insert new bold text
+      const strong = document.createElement('strong');
+      strong.textContent = ' **BOLD TEXT** ';
+      editor.appendChild(strong);
+      console.log('New bold text inserted');
+    }
   };
 
   const applyItalic = () => {
-    console.log('applyItalic called - SIMPLE VERSION');
+    console.log('applyItalic called - ENHANCED VERSION');
     
     const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (!editor) return;
     
     editor.focus();
     
-    const em = document.createElement('em');
-    em.textContent = ' *ITALIC TEXT* ';
-    editor.appendChild(em);
-    
-    console.log('Italic text appended successfully');
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) {
+        // Text is selected - wrap it with italic
+        const em = document.createElement('em');
+        range.surroundContents(em);
+        console.log('Selected text wrapped with italic');
+      } else {
+        // No selection - insert new italic text
+        const em = document.createElement('em');
+        em.textContent = ' *ITALIC TEXT* ';
+        editor.appendChild(em);
+        console.log('New italic text inserted');
+      }
+    } else {
+      // No selection - insert new italic text
+      const em = document.createElement('em');
+      em.textContent = ' *ITALIC TEXT* ';
+      editor.appendChild(em);
+      console.log('New italic text inserted');
+    }
   };
 
   const applyUnderline = () => {
-    console.log('applyUnderline called - SIMPLE VERSION');
+    console.log('applyUnderline called - ENHANCED VERSION');
     
     const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (!editor) return;
     
     editor.focus();
     
-    const u = document.createElement('u');
-    u.textContent = ' _UNDERLINED TEXT_ ';
-    editor.appendChild(u);
-    
-    console.log('Underlined text appended successfully');
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) {
+        // Text is selected - wrap it with underline
+        const u = document.createElement('u');
+        range.surroundContents(u);
+        console.log('Selected text wrapped with underline');
+      } else {
+        // No selection - insert new underlined text
+        const u = document.createElement('u');
+        u.textContent = ' _UNDERLINED TEXT_ ';
+        editor.appendChild(u);
+        console.log('New underlined text inserted');
+      }
+    } else {
+      // No selection - insert new underlined text
+      const u = document.createElement('u');
+      u.textContent = ' _UNDERLINED TEXT_ ';
+      editor.appendChild(u);
+      console.log('New underlined text inserted');
+    }
   };
 
   const applyList = () => {
-    console.log('applyList called - SIMPLE VERSION');
+    console.log('applyList called - ENHANCED VERSION');
     
     const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (!editor) return;
     
     editor.focus();
     
-    const ul = document.createElement('ul');
-    const li = document.createElement('li');
-    li.textContent = '• LIST ITEM';
-    ul.appendChild(li);
-    editor.appendChild(ul);
-    
-    console.log('List appended successfully');
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) {
+        // Text is selected - wrap it with list item
+        const ul = document.createElement('ul');
+        const li = document.createElement('li');
+        li.appendChild(range.extractContents());
+        ul.appendChild(li);
+        range.insertNode(ul);
+        console.log('Selected text wrapped with list item');
+      } else {
+        // No selection - insert new list
+        const ul = document.createElement('ul');
+        const li = document.createElement('li');
+        li.textContent = '• LIST ITEM';
+        ul.appendChild(li);
+        editor.appendChild(ul);
+        console.log('New list inserted');
+      }
+    } else {
+      // No selection - insert new list
+      const ul = document.createElement('ul');
+      const li = document.createElement('li');
+      li.textContent = '• LIST ITEM';
+      ul.appendChild(li);
+      editor.appendChild(ul);
+      console.log('New list inserted');
+    }
   };
 
   // Enhanced formatting functions with selection support

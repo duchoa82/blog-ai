@@ -37,6 +37,7 @@ const ShopifyAuth: React.FC = () => {
 
       // Tạo OAuth URL và redirect
       const authUrl = getShopifyAuthUrl(shop);
+      // Redirect to Shopify OAuth instead of embedding
       window.location.href = authUrl;
     } catch (err) {
       setError('Failed to start OAuth process');
