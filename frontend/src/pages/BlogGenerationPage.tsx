@@ -368,13 +368,36 @@ export default function BlogGenerationPage() {
       setShopConfig(prev => ({ ...prev, isConnecting: true }));
 
       // Initialize article service with current shop credentials
+      let shopDomain = '';
+      let accessToken = '';
+      
+      // Try session service first
       const currentShop = shopifySessionService.getCurrentShop();
       if (currentShop) {
         const session = shopifySessionService.getSession(currentShop);
         if (session) {
-          shopifyArticleService.initialize(currentShop, session.accessToken, '2025-01');
+          shopDomain = currentShop;
+          accessToken = session.accessToken;
         }
       }
+      
+      // Fallback to config service if no session
+      if (!shopDomain || !accessToken) {
+        const config = shopConfigService.getConfig();
+        if (config && shopConfigService.isConfigValid()) {
+          shopDomain = config.storeDomain;
+          accessToken = config.accessToken;
+        }
+      }
+      
+      if (!shopDomain || !accessToken) {
+        throw new Error('No shop credentials available. Please configure your Shopify store first.');
+      }
+      
+      console.log('Shop domain:', shopDomain);
+      console.log('Access token available:', !!accessToken);
+      
+      shopifyArticleService.initialize(shopDomain, accessToken, '2025-01');
 
       // Create article using REST API
       const articleResponse = await shopifyArticleService.createArticle(blogId, articleData);
@@ -471,31 +494,14 @@ export default function BlogGenerationPage() {
     setLinkUrl('');
   };
 
-  const insertImage = (url: string) => {
-    console.log('insertImage called - SIMPLE VERSION:', url);
-    
-    const editor = document.querySelector('[contenteditable]') as HTMLElement;
-    if (!editor) return;
-    
-    editor.focus();
-    
-    const img = document.createElement('img');
-    img.src = url;
-    img.style.maxWidth = '100%';
-    img.style.height = 'auto';
-    img.alt = 'Inserted Image';
-    editor.appendChild(img);
-    
-    console.log('Image appended successfully');
-    setShowImageModal(false);
-  };
+
 
   // Basic formatting functions
   const applyBold = () => {
     console.log('applyBold called - SIMPLE VERSION');
     
-    // Find editor
-    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    // Find editor by contentEditable attribute
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (!editor) {
       console.log('Editor not found');
       return;
@@ -515,7 +521,7 @@ export default function BlogGenerationPage() {
   const applyItalic = () => {
     console.log('applyItalic called - SIMPLE VERSION');
     
-    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (!editor) return;
     
     editor.focus();
@@ -530,7 +536,7 @@ export default function BlogGenerationPage() {
   const applyUnderline = () => {
     console.log('applyUnderline called - SIMPLE VERSION');
     
-    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (!editor) return;
     
     editor.focus();
@@ -545,7 +551,7 @@ export default function BlogGenerationPage() {
   const applyList = () => {
     console.log('applyList called - SIMPLE VERSION');
     
-    const editor = document.querySelector('[contenteditable]') as HTMLElement;
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (!editor) return;
     
     editor.focus();
@@ -557,6 +563,134 @@ export default function BlogGenerationPage() {
     editor.appendChild(ul);
     
     console.log('List appended successfully');
+  };
+
+  // Enhanced formatting functions with selection support
+  const applyFormatting = (tag: string, className?: string) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) {
+        // Text is selected - wrap it
+        const element = document.createElement(tag);
+        if (className) element.className = className;
+        range.surroundContents(element);
+      } else {
+        // No selection - insert new element
+        const element = document.createElement(tag);
+        element.textContent = ` ${tag.toUpperCase()} TEXT `;
+        editor.appendChild(element);
+      }
+    } else {
+      // No selection - insert new element
+      const element = document.createElement(tag);
+      element.textContent = ` ${tag.toUpperCase()} TEXT `;
+      editor.appendChild(element);
+    }
+  };
+
+  // Custom color application
+  const applyColor = (color: string) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) {
+        const span = document.createElement('span');
+        span.style.color = color;
+        range.surroundContents(span);
+      }
+    }
+  };
+
+  // Custom background color
+  const applyBackgroundColor = (color: string) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) {
+        const span = document.createElement('span');
+        span.style.backgroundColor = color;
+        range.surroundContents(span);
+      }
+    }
+  };
+
+  // Enhanced link insertion
+  const insertLink = (url: string, text?: string) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (!range.collapsed) {
+        // Text is selected - wrap it with link
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.style.color = '#008060';
+        link.style.textDecoration = 'underline';
+        range.surroundContents(link);
+      } else {
+        // No selection - insert new link
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.textContent = text || url;
+        link.style.color = '#008060';
+        link.style.textDecoration = 'underline';
+        editor.appendChild(link);
+      }
+    } else {
+      // No selection - insert new link
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.textContent = text || url;
+      link.style.color = '#008060';
+      link.style.textDecoration = 'underline';
+      editor.appendChild(link);
+    }
+    
+    setShowLinkInput(false);
+    setLinkUrl('');
+  };
+
+  // Enhanced image insertion
+  const insertImage = (src: string, alt?: string, width?: string, height?: string) => {
+    const editor = document.querySelector('[contenteditable="true"]') as HTMLElement;
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = alt || 'Image';
+    if (width) img.style.width = width;
+    if (height) img.style.height = height;
+    img.style.maxWidth = '100%';
+    img.style.borderRadius = '8px';
+    img.style.margin = '16px 0';
+    
+    editor.appendChild(img);
+    setShowImageModal(false);
   };
 
   const handleContentSettingsChange = (field: string, value: string) => {
@@ -630,13 +764,28 @@ export default function BlogGenerationPage() {
                       )}
                     </>
                   ) : (
-                    'Not configured - Please configure your Shopify store to publish blogs'
+                    <>
+                      Not configured - Click "Install App" to connect your Shopify store
+                      <br />
+                      <span style={{ fontSize: '12px', color: '#8c9196' }}>
+                        This will allow you to publish blogs directly to your store
+                      </span>
+                    </>
                   )}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {shopConfig.isConnecting && (
                   <div style={{ fontSize: '14px', color: '#6d7175' }}>Connecting...</div>
+                )}
+                {!shopConfig.isConfigured && (
+                  <Button 
+                    variant="primary" 
+                    size="slim"
+                    onClick={() => navigate('/auth')}
+                  >
+                    Install App
+                  </Button>
                 )}
                 <div style={{
                   width: '12px',
@@ -1404,6 +1553,60 @@ export default function BlogGenerationPage() {
                       <span>🎨</span>
                     </button>
 
+                    {/* Custom Color Picker */}
+                    {showColorPicker && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: '0',
+                        backgroundColor: 'white',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        zIndex: 1000,
+                        padding: '12px',
+                        minWidth: '200px',
+                        marginTop: '4px'
+                      }}>
+                        <div style={{ marginBottom: '8px', fontWeight: '500', fontSize: '12px' }}>Text Colors</div>
+                        <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                          {['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000'].map(color => (
+                            <button
+                              key={color}
+                              onClick={() => applyColor(color)}
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                                backgroundColor: color,
+                                border: '1px solid #ccc',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                              title={color}
+                            />
+                          ))}
+                        </div>
+                        <div style={{ marginBottom: '8px', fontWeight: '500', fontSize: '12px' }}>Background Colors</div>
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                          {['#FFFFFF', '#FFE6E6', '#E6FFE6', '#E6E6FF', '#FFFFE6', '#FFE6FF', '#E6FFFF', '#FFE6CC', '#E6CCFF', '#CCFFE6'].map(color => (
+                            <button
+                              key={color}
+                              onClick={() => applyBackgroundColor(color)}
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                                backgroundColor: color,
+                                border: '1px solid #ccc',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                              }}
+                              title={color}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Link */}
                     <button 
                       onClick={() => {
@@ -1903,5 +2106,6 @@ export default function BlogGenerationPage() {
     </div>
   );
 }
+
 
 
