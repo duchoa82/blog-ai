@@ -9,6 +9,26 @@ interface AIGenerationRequest {
   language: string;
 }
 
+interface BlogTitleGenerationRequest {
+  brandVoice: {
+    tone: string;
+    formalityLevel: string;
+    brandPersonality: string;
+    businessDescription: string;
+    targetCustomer: string;
+  };
+  keywords: string[];
+  language?: string;
+}
+
+interface BlogTitleGenerationResponse {
+  success: boolean;
+  titles: string[];
+  contentPillars: string[];
+  recommendedTitle: string;
+  error?: string;
+}
+
 interface AIGenerationResponse {
   success: boolean;
   content: string;
@@ -181,6 +201,66 @@ Personalize your ${request.productTitle} experience for maximum benefit.`
     };
   }
 
+  async generateBlogTitles(request: BlogTitleGenerationRequest): Promise<BlogTitleGenerationResponse> {
+    try {
+      if (!this.apiKey) {
+        throw new Error('API key not configured');
+      }
+
+      // Simulate AI generation for now
+      // In production, this would call the actual AI service
+      const response = await this.simulateBlogTitleGeneration(request);
+      
+      return response;
+    } catch (error) {
+      console.error('Blog title generation failed:', error);
+      return {
+        success: false,
+        titles: [],
+        contentPillars: [],
+        recommendedTitle: '',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  private async simulateBlogTitleGeneration(request: BlogTitleGenerationRequest): Promise<BlogTitleGenerationResponse> {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+
+    // Content pillars in exact order
+    const contentPillars = [
+      'Educational / How-to',
+      'Industry Insights / Trends',
+      'Product-focused',
+      'Customer Stories / Testimonials',
+      'Opinion / Thought Leadership',
+      'Behind-the-scenes / Company Culture',
+      'Fun / Engaging / Light-hearted'
+    ];
+
+    // Generate 7 titles based on content pillars and brand voice
+    const titles = [
+      `How to Master ${request.keywords[0] || 'Your Skills'} in 2025: Complete Guide`,
+      `${request.keywords[0] || 'Industry'} Trends 2025: What's Hot and What's Not`,
+      `Best ${request.keywords[0] || 'Products'} for Every Occasion: 2025 Collection`,
+      `Customer Success: How Our ${request.keywords[0] || 'Solutions'} Transformed Lives`,
+      `Why ${request.keywords[0] || 'Innovation'} Is the Future of ${request.brandVoice.businessDescription || 'Business'}`,
+      `Behind the Scenes: Designing Our 2025 ${request.keywords[0] || 'Collection'}`,
+      `Fun ${request.keywords[0] || 'Ideas'}: Make Your Style Pop in 2025`
+    ];
+
+    // Select recommended title (first one for now, but could be AI-selected)
+    const recommendedTitle = titles[0];
+
+    return {
+      success: true,
+      titles,
+      contentPillars,
+      recommendedTitle
+    };
+  }
+
   async validateAPIKey(apiKey: string, provider: string): Promise<boolean> {
     try {
       // Simulate API key validation
@@ -216,4 +296,9 @@ Personalize your ${request.productTitle} experience for maximum benefit.`
 
 // Export singleton instance
 export const aiService = new AIService();
-export type { AIGenerationRequest, AIGenerationResponse };
+export type { 
+  AIGenerationRequest, 
+  AIGenerationResponse,
+  BlogTitleGenerationRequest,
+  BlogTitleGenerationResponse
+};
